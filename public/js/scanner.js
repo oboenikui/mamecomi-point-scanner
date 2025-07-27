@@ -16,15 +16,21 @@ class MameComicScanner {
     // スキャナーの状態
     this.state = 'waiting'; // 'waiting', 'scanning', 'completed'
     
+    // カメラ関連
+    this.currentDeviceId = null;
+    this.availableCameras = [];
+    
     // ボタン要素
     this.startScanButton = document.getElementById('start-scan');
     this.rescanButton = document.getElementById('rescan');
     this.copyButton = document.getElementById('copy-button');
+    this.cameraSwitchButton = document.getElementById('camera-switch');
     
     // ステータス表示
     this.statusElement = document.getElementById('status');
     this.scannedCodeElement = document.getElementById('scanned-code');
     this.codeTextElement = document.getElementById('code-text');
+    this.cameraInfoElement = document.getElementById('camera-info');
     
     this.initializeEventListeners();
     this.waitForOpenCV();
@@ -74,10 +80,111 @@ class MameComicScanner {
     }
   }
   
+  async enumerateCameras() {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      console.log(devices);
+      this.availableCameras = devices.filter(device => device.kind === 'videoinput');
+      
+      // 複数のカメラが利用可能な場合はカメラ切り替えボタンを表示
+      if (this.availableCameras.length > 1) {
+        this.showCameraSwitchButton();
+      }
+      
+    } catch (error) {
+      console.error('カメラ列挙エラー:', error);
+    }
+  }
+  
   initializeEventListeners() {
     this.startScanButton.addEventListener('click', () => this.startScanning());
     this.rescanButton.addEventListener('click', () => this.startScanning());
     this.copyButton.addEventListener('click', () => this.copyToClipboard());
+    
+    if (this.cameraSwitchButton) {
+      this.cameraSwitchButton.addEventListener('click', () => this.switchCamera());
+    }
+  }
+  
+  showCameraSwitchButton() {
+    if (this.cameraSwitchButton) {
+      this.cameraSwitchButton.style.display = 'block';
+    }
+  }
+  
+  showCameraInfo(message) {
+    if (this.cameraInfoElement) {
+      this.cameraInfoElement.textContent = message;
+      this.cameraInfoElement.style.display = 'block';
+    }
+  }
+  
+  async switchCamera() {
+    try {
+      // 現在のストリームを停止
+      if (this.stream) {
+        this.stream.getTracks().forEach(track => track.stop());
+      }
+      
+      // 次のカメラを選択
+      const currentIndex = this.availableCameras.findIndex(camera => camera.deviceId === this.currentDeviceId);
+      const nextIndex = (currentIndex + 1) % this.availableCameras.length;
+      const nextCamera = this.availableCameras[nextIndex];
+      
+      this.currentDeviceId = nextCamera.deviceId;
+      
+      // 新しいカメラでストリームを開始
+      const constraints = this.getCameraConstraints();
+      this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+      this.video.srcObject = this.stream;
+      
+      // カメラ情報を表示
+      const cameraName = this.getCameraDisplayName(nextCamera);
+      this.showCameraInfo(`カメラ切り替え: ${cameraName}`);
+      
+      this.video.onloadedmetadata = () => {
+        this.canvas.width = this.video.videoWidth;
+        this.canvas.height = this.video.videoHeight;
+        
+        if (this.state === 'scanning') {
+          this.beginContinuousScanning();
+        }
+      };
+      
+    } catch (error) {
+      console.error('カメラ切り替えエラー:', error);
+      this.updateStatus('カメラの切り替えに失敗しました');
+    }
+  }
+  
+  getCameraDisplayName(camera) {
+    // MediaDeviceInfoのlabelを直接使用
+    if (camera.label) {
+      return camera.label;
+    }
+    
+    // labelが空の場合（権限がない場合など）のフォールバック
+    const index = this.availableCameras.indexOf(camera) + 1;
+    return `カメラ ${index}`;
+  }
+  
+  getCameraConstraints() {
+    const baseConstraints = {
+      video: {
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        focusMode: 'continuous',
+        facingMode: 'environment'
+      }
+    };
+    
+    // 特定のカメラが選択されている場合
+    if (this.currentDeviceId) {
+      baseConstraints.video.deviceId = { exact: this.currentDeviceId };
+      delete baseConstraints.video.facingMode; // deviceIdを指定する場合はfacingModeを削除
+    }
+    
+    return baseConstraints;
   }
   
   async startScanning() {
@@ -92,16 +199,27 @@ class MameComicScanner {
         return;
       }
       
-      const constraints = {
-        video: {
-          facingMode: 'environment', // 背面カメラを優先
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      };
+      const constraints = this.getCameraConstraints();
       
       this.stream = await navigator.mediaDevices.getUserMedia(constraints);
       this.video.srcObject = this.stream;
+      
+      // カメラアクセス成功後に利用可能なカメラを列挙
+      await this.enumerateCameras();
+      
+      // 現在使用中のカメラのデバイスIDを保存
+      if (!this.currentDeviceId) {
+        const track = this.stream.getVideoTracks()[0];
+        const settings = track.getSettings();
+        this.currentDeviceId = settings.deviceId;
+        
+        // カメラ名を表示
+        const currentCamera = this.availableCameras.find(camera => camera.deviceId === this.currentDeviceId);
+        if (currentCamera) {
+          const cameraName = this.getCameraDisplayName(currentCamera);
+          this.showCameraInfo(`使用中: ${cameraName}`);
+        }
+      }
       
       this.video.onloadedmetadata = () => {
         this.canvas.width = this.video.videoWidth;
@@ -231,7 +349,7 @@ class MameComicScanner {
       // キャンバスからOpenCV Matオブジェクトを作成
       const src = window.cv.imread(this.canvas);
       
-      // スキャンフレーム領域を抽出（画面中央の200x60px領域）
+      // スキャナーのフレーム領域を抽出（画面中央の200x60px領域）
       const scanRegion = this.extractScanRegion(src);
       
       // 画像前処理でOCR精度を向上
