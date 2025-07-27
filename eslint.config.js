@@ -1,11 +1,13 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
+import astro from 'eslint-plugin-astro';
 
 export default [
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  ...astro.configs.recommended,
   {
-    files: ['**/*.{js,ts,astro}'],
+    files: ['**/*.{js,ts}'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
@@ -38,12 +40,6 @@ export default [
         cv: 'readonly'
       }
     }
-  },
-  {
-    files: ['**/*.astro'],
-    rules: {
-      // Astro specific rules can be added here
-    },
   },
   {
     ignores: ['dist/', 'node_modules/', '.astro/'],
