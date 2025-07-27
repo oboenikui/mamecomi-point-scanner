@@ -33,9 +33,8 @@ const description = 'すこやかミルクのシリアルコードをスキャ�
         </div>
         
         <div id="controls">
-          <button id="start-camera">カメラを開始</button>
-          <button id="capture" disabled>スキャン</button>
-          <button id="stop-camera" disabled>停止</button>
+          <button id="start-scan">スキャン開始</button>
+          <button id="rescan" style="display: none;">再スキャン</button>
         </div>
         
         <div id="result-section">
@@ -158,33 +157,23 @@ const description = 'すこやかミルクのシリアルコードをスキャ�
     transition: all 0.3s ease;
   }
   
-  #start-camera {
+  #start-scan {
     background: #4CAF50;
     color: white;
   }
   
-  #start-camera:hover:not(:disabled) {
+  #start-scan:hover:not(:disabled) {
     background: #45a049;
     transform: translateY(-2px);
   }
   
-  #capture {
+  #rescan {
     background: #2196F3;
     color: white;
   }
   
-  #capture:hover:not(:disabled) {
+  #rescan:hover:not(:disabled) {
     background: #1976D2;
-    transform: translateY(-2px);
-  }
-  
-  #stop-camera {
-    background: #f44336;
-    color: white;
-  }
-  
-  #stop-camera:hover:not(:disabled) {
-    background: #da190b;
     transform: translateY(-2px);
   }
   
