@@ -22,3 +22,9 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# SSL certificates for local development (vite-plugin-mkcert)
+.vite-plugin-mkcert
+
+# HTTPS development config (keep in repo for team)
+# astro.config.https.mjs

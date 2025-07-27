@@ -13,6 +13,8 @@ const description = 'すこやかミルクのシリアルコードをスキャ�
     
     <!-- OpenCV.js -->
     <script is:inline async src="/opencv.js"></script>
+    <!-- Tesseract.js -->
+    <script is:inline async src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <!-- スキャナースクリプト -->
     <script is:inline src="/js/scanner.js"></script>
   </head>
@@ -124,12 +126,55 @@ const description = 'すこやかミルクのシリアルコードをスキャ�
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 200px;
-    height: 60px;
-    border: 3px solid #4CAF50;
-    border-radius: 8px;
-    background: rgba(76, 175, 80, 0.1);
+    width: 132px;  /* 11mm ≈ 132px (3mm = 36px基準) */
+    height: 108px; /* 9mm ≈ 108px */
+    border: 2px solid #4CAF50;
+    border-radius: 4px;
+    background: rgba(76, 175, 80, 0.05);
     animation: pulse 2s infinite;
+  }
+  
+  /* 括弧ガイドの描画 */
+  #scan-frame::before,
+  #scan-frame::after {
+    content: '';
+    position: absolute;
+    top: 10px;
+    bottom: 10px;
+    width: 6px;
+    border: 3px solid #FF6B35;
+    border-radius: 2px;
+    background: rgba(255, 107, 53, 0.2);
+  }
+  
+  /* 左括弧 [ */
+  #scan-frame::before {
+    left: 12px;
+    border-right: none;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  
+  /* 右括弧 ] */
+  #scan-frame::after {
+    right: 12px;
+    border-left: none;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+  
+  /* 括弧ガイドに説明テキストを追加 */
+  #scan-overlay::after {
+    content: 'コードを [ ] の間に合わせてください';
+    position: absolute;
+    bottom: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    white-space: nowrap;
   }
   
   @keyframes pulse {

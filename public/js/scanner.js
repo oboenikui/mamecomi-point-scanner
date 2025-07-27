@@ -10,6 +10,7 @@ class MameComicScanner {
     this.ctx = this.canvas.getContext('2d');
     this.stream = null;
     this.opencvReady = false;
+    this.tesseractWorker = null;
     this.scanningInterval = null;
     
     // スキャナーの状態
@@ -30,27 +31,47 @@ class MameComicScanner {
   }
   
   waitForOpenCV() {
-    this.updateStatus('OpenCVライブラリを読み込み中...');
+    this.updateStatus('ライブラリを読み込み中...');
     
-    if (typeof window.cv !== 'undefined') {
-      this.onOpenCVReady();
-    } else {
-      // OpenCVが読み込まれるまで待機
-      const checkOpenCV = () => {
-        if (typeof window.cv !== 'undefined') {
-          this.onOpenCVReady();
-        } else {
-          setTimeout(checkOpenCV, 100);
-        }
-      };
-      setTimeout(checkOpenCV, 100);
-    }
+    const checkLibraries = () => {
+      const opencvReady = typeof window.cv !== 'undefined';
+      const tesseractReady = typeof window.Tesseract !== 'undefined';
+      
+      if (opencvReady && tesseractReady) {
+        this.onLibrariesReady();
+      } else {
+        setTimeout(checkLibraries, 100);
+      }
+    };
+    
+    checkLibraries();
   }
   
-  onOpenCVReady() {
+  async onLibrariesReady() {
     this.opencvReady = true;
-    this.updateStatus('準備完了: スキャンを開始してください');
-    console.log('OpenCV.js が正常に読み込まれました');
+    
+    try {
+      // Tesseractワーカーを初期化
+      this.updateStatus('OCRエンジンを初期化中...');
+      this.tesseractWorker = await window.Tesseract.createWorker();
+      
+      await this.tesseractWorker.loadLanguage('eng');
+      await this.tesseractWorker.initialize('eng');
+      
+      // 文字認識のパラメータを設定
+      await this.tesseractWorker.setParameters({
+        tessedit_char_whitelist: 'ACEFGHJKLMNPRTWXY0123456789[]',
+        tessedit_pageseg_mode: '6', // Uniform block of text
+        tessedit_ocr_engine_mode: '1' // Neural nets LSTM engine only
+      });
+      
+      this.updateStatus('準備完了: スキャンを開始してください');
+      console.log('ライブラリが正常に読み込まれました');
+      
+    } catch (error) {
+      console.error('OCRエンジンの初期化エラー:', error);
+      this.updateStatus('OCRエンジンの初期化に失敗しました');
+    }
   }
   
   initializeEventListeners() {
@@ -122,8 +143,18 @@ class MameComicScanner {
     this.video.srcObject = null;
   }
   
-  performScan() {
-    if (!this.opencvReady || this.state !== 'scanning') {
+  // リソースクリーンアップ
+  async cleanup() {
+    this.stopCamera();
+    
+    if (this.tesseractWorker) {
+      await this.tesseractWorker.terminate();
+      this.tesseractWorker = null;
+    }
+  }
+  
+  async performScan() {
+    if (!this.opencvReady || !this.tesseractWorker || this.state !== 'scanning') {
       return;
     }
     
@@ -131,8 +162,8 @@ class MameComicScanner {
       // キャンバスに現在のビデオフレームを描画
       this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
       
-      // OpenCVで画像処理
-      const scannedText = this.processImageWithOpenCV();
+      // OpenCVで画像処理とOCR
+      const scannedText = await this.processImageWithOpenCV();
       
       if (scannedText && scannedText.trim()) {
         // マーカーが検出されたらスキャン完了
@@ -195,27 +226,24 @@ class MameComicScanner {
     }
   }
   
-  processImageWithOpenCV() {
+  async processImageWithOpenCV() {
     try {
       // キャンバスからOpenCV Matオブジェクトを作成
       const src = window.cv.imread(this.canvas);
-      const gray = new window.cv.Mat();
-      const binary = new window.cv.Mat();
       
-      // グレースケールに変換
-      window.cv.cvtColor(src, gray, window.cv.COLOR_RGBA2GRAY);
+      // スキャンフレーム領域を抽出（画面中央の200x60px領域）
+      const scanRegion = this.extractScanRegion(src);
       
-      // 二値化でテキスト部分を強調
-      window.cv.threshold(gray, binary, 0, 255, window.cv.THRESH_BINARY + window.cv.THRESH_OTSU);
+      // 画像前処理でOCR精度を向上
+      const preprocessed = this.preprocessForOCR(scanRegion);
       
-      // 簡単なOCR処理（実際の実装では外部ライブラリが必要）
-      // ここでは仮の実装として、画像の特徴から推定
-      const result = this.simpleTextRecognition(binary);
+      // OCR処理
+      const result = await this.performOCR(preprocessed);
       
       // メモリクリーンアップ
       src.delete();
-      gray.delete();
-      binary.delete();
+      scanRegion.delete();
+      preprocessed.delete();
       
       return result;
       
@@ -225,25 +253,118 @@ class MameComicScanner {
     }
   }
   
-  simpleTextRecognition(_binaryMat) {
-    // 実際のOCR実装では Tesseract.js などを使用
-    // ここでは簡易的なシミュレーション
+  extractScanRegion(src) {
+    // 画面中央の132x108px領域を抽出（スキャンフレームに対応）
+    // 実際の寸法: 横11mm × 縦9mm
+    const centerX = Math.floor(src.cols / 2);
+    const centerY = Math.floor(src.rows / 2);
+    const width = 132;  // 11mm相当
+    const height = 108; // 9mm相当
     
-    // 画像の中央部分を分析
-    // 実際の実装では、この部分でより精密な文字認識を行う
-    // 現在は開発用として、10%の確率でダミーコードを返す（マーカー検出のシミュレーション）
-    if (Math.random() < 0.1) { // 10%の確率で「検出」
-      const dummyCodes = [
-        'ABC123DEF456',
-        'XYZ789GHI012',
-        'MNO345PQR678',
-        'STU901VWX234'
-      ];
-      return dummyCodes[Math.floor(Math.random() * dummyCodes.length)];
+    const rect = new window.cv.Rect(
+      centerX - width / 2,
+      centerY - height / 2,
+      width,
+      height
+    );
+    
+    return src.roi(rect);
+  }
+  
+  preprocessForOCR(src) {
+    const gray = new window.cv.Mat();
+    const binary = new window.cv.Mat();
+    const processed = new window.cv.Mat();
+    
+    // グレースケールに変換
+    window.cv.cvtColor(src, gray, window.cv.COLOR_RGBA2GRAY);
+    
+    // ガウシアンブラーでノイズ除去
+    const kernelSize = new window.cv.Size(3, 3);
+    window.cv.GaussianBlur(gray, gray, kernelSize, 0);
+    
+    // 適応的二値化でコントラストを強調
+    window.cv.adaptiveThreshold(
+      gray, 
+      binary, 
+      255, 
+      window.cv.ADAPTIVE_THRESH_GAUSSIAN_C, 
+      window.cv.THRESH_BINARY, 
+      11, 
+      2
+    );
+    
+    // モルフォロジー処理で文字を鮮明化
+    const kernel = window.cv.getStructuringElement(
+      window.cv.MORPH_RECT, 
+      new window.cv.Size(2, 2)
+    );
+    window.cv.morphologyEx(binary, processed, window.cv.MORPH_CLOSE, kernel);
+    
+    // メモリクリーンアップ
+    gray.delete();
+    binary.delete();
+    kernel.delete();
+    
+    return processed;
+  }
+  
+  async performOCR(processedImage) {
+    try {
+      // OpenCV MatをCanvasに描画
+      const tempCanvas = document.createElement('canvas');
+      window.cv.imshow(tempCanvas, processedImage);
+      
+      // Tesseract.jsでOCR実行
+      const { data: { text } } = await this.tesseractWorker.recognize(tempCanvas);
+      
+      // 結果を検証・整形
+      const formattedCode = this.validateAndFormatCode(text);
+      
+      return formattedCode;
+      
+    } catch (error) {
+      console.error('OCR実行エラー:', error);
+      return null;
+    }
+  }
+  
+  validateAndFormatCode(rawText) {
+    if (!rawText) return null;
+    
+    // 改行、スペース、特殊文字を除去
+    const cleanText = rawText.replace(/[\s\n\r]/g, '');
+    
+    // 括弧で囲まれた16文字のパターンを検索
+    const bracketPattern = /\[([ACEFGHJKLMNPRTWXY0123456789]{16})\]/;
+    const match = cleanText.match(bracketPattern);
+    
+    if (match) {
+      const code = match[1];
+      
+      // 禁止文字（B、D、I、O、Q、S、U、V、Z）が含まれていないかチェック
+      const forbiddenChars = /[BDIOQSUVZ]/;
+      if (!forbiddenChars.test(code)) {
+        return code;
+      }
     }
     
-    return null; // マーカー未検出
+    // より柔軟なパターンマッチング（括弧が認識されない場合）
+    const flexiblePattern = /([ACEFGHJKLMNPRTWXY0123456789]{16})/;
+    const flexibleMatch = cleanText.match(flexiblePattern);
+    
+    if (flexibleMatch) {
+      const code = flexibleMatch[1];
+      const forbiddenChars = /[BDIOQSUVZ]/;
+      if (!forbiddenChars.test(code)) {
+        return code;
+      }
+    }
+    
+    return null;
   }
+  
+
   
   displayScannedCode(code) {
     this.codeTextElement.textContent = code;
@@ -281,5 +402,10 @@ class MameComicScanner {
 
 // DOM読み込み完了後にアプリケーションを初期化
 document.addEventListener('DOMContentLoaded', () => {
-  new MameComicScanner();
+  const scanner = new MameComicScanner();
+  
+  // ページを離れる際のクリーンアップ
+  window.addEventListener('beforeunload', async () => {
+    await scanner.cleanup();
+  });
 }); 
