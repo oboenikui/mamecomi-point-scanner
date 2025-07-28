@@ -360,7 +360,7 @@ class MameComicScanner {
     const maxAttempts = 50; // 無限ループを防ぐための上限
     
     try {
-      // 11回成功するまで繰り返し
+      // 5回成功するまで繰り返し
       while (scanResults.length < targetSuccessCount && attempts < maxAttempts) {
         attempts++;
         
