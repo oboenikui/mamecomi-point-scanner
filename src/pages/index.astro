@@ -29,6 +29,7 @@ const description = 'すこやかミルクのシリアルコードをスキャ�
         <div id="camera-section">
           <video id="video" autoplay playsinline></video>
           <canvas id="canvas" style="display: none;"></canvas>
+          <canvas id="debug-canvas" style="display: none;"></canvas>
           <div id="scan-overlay">
             <div id="scan-frame"></div>
           </div>
@@ -38,9 +39,15 @@ const description = 'すこやかミルクのシリアルコードをスキャ�
           <button id="start-scan">スキャン開始</button>
           <button id="rescan" style="display: none;">再スキャン</button>
           <button id="camera-switch" style="display: none;">カメラ切り替え</button>
+          <button id="debug-toggle">デバッグ表示</button>
         </div>
         
         <div id="camera-info" style="display: none;"></div>
+        
+        <div id="debug-info" style="display: none;">
+          <h4>デバッグ情報</h4>
+          <div id="detection-stats"></div>
+        </div>
         
         <div id="result-section">
           <div id="status">カメラの開始ボタンを押してください</div>
@@ -105,14 +112,19 @@ const description = 'すこやかミルクのシリアルコードをスキャ�
   #camera-section {
     position: relative;
     margin-bottom: 20px;
+    max-width: 100%;
+    overflow: hidden;
   }
   
   #video {
     width: 100%;
-    max-width: 500px;
-    height: auto;
+    max-width: 400px;
+    max-height: 400px;
+    aspect-ratio: 1;
     border-radius: 12px;
     background: #f0f0f0;
+    margin: 0 auto;
+    display: block;
   }
   
   #scan-overlay {
@@ -294,6 +306,49 @@ const description = 'すこやかミルクのシリアルコードをスキャ�
   #copy-button:hover {
     background: #F57C00;
     transform: translateY(-2px);
+  }
+  
+  /* デバッグ用スタイル */
+  #debug-toggle {
+    background: #607D8B;
+    color: white;
+  }
+  
+  #debug-toggle:hover:not(:disabled) {
+    background: #455A64;
+    transform: translateY(-2px);
+  }
+  
+  #debug-canvas {
+    width: 100%;
+    max-width: 400px;
+    max-height: 400px;
+    aspect-ratio: 1;
+    border-radius: 12px;
+    border: 2px solid #607D8B;
+    margin: 0 auto;
+    display: block;
+    position: relative;
+  }
+  
+  #debug-info {
+    padding: 16px;
+    margin-bottom: 16px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 0.9rem;
+  }
+  
+  #debug-info h4 {
+    margin-bottom: 12px;
+    color: #495057;
+  }
+  
+  #detection-stats {
+    font-family: monospace;
+    white-space: pre-line;
+    color: #666;
   }
   
   /* モバイル対応 */
