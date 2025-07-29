@@ -1,20 +1,29 @@
 ---
 const title = 'まめコミポイントスキャナー';
-const description = 'すこやかミルクのシリアルコードをスキャンしてクリップボードにコピーします';
+const description =
+  'すこやかミルクのシリアルコードをスキャンしてクリップボードにコピーします';
 ---
 
 <html lang="ja">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" type="image/svg+xml" href={`${import.meta.env.BASE_URL}favicon.svg`} />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href={`${import.meta.env.BASE_URL}favicon.svg`}
+    />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
     <title>{title}</title>
-    
+
     <!-- OpenCV.js -->
     <script is:inline async src="/opencv.js"></script>
     <!-- Tesseract.js -->
-    <script is:inline async src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script
+      is:inline
+      async
+      src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"
+    ></script>
     <!-- スキャナースクリプト -->
     <script is:inline src="/js/scanner.js"></script>
   </head>
@@ -24,24 +33,65 @@ const description = 'すこやかミルクのシリアルコードをスキャ�
         <h1>{title}</h1>
         <p>{description}</p>
       </header>
-      
+
       <div id="scanner-container">
         <div id="camera-section">
           <video id="video" autoplay playsinline></video>
           <canvas id="canvas" style="display: none;"></canvas>
+          <canvas id="debug-canvas" style="display: none;"></canvas>
           <div id="scan-overlay">
             <div id="scan-frame"></div>
           </div>
+
+          <!-- カメラ切り替えボタン（右下固定） -->
+          <button
+            id="camera-switch"
+            class="camera-switch-btn"
+            title="カメラ切り替え"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="48px"
+              viewBox="0 -960 960 960"
+              width="48px"
+              fill="#ffffff"
+              ><path
+                d="M320-280q-33 0-56.5-23.5T240-360v-240q0-33 23.5-56.5T320-680h40l40-40h160l40 40h40q33 0 56.5 23.5T720-600v240q0 33-23.5 56.5T640-280H320Zm0-80h320v-240H320v240Zm160-40q33 0 56.5-23.5T560-480q0-33-23.5-56.5T480-560q-33 0-56.5 23.5T400-480q0 33 23.5 56.5T480-400ZM342-940q34-11 68.5-15.5T480-960q94 0 177.5 33.5t148 93Q870-774 911-693.5T960-520h-80q-7-72-38-134.5t-79.5-110Q714-812 651-842t-135-36l62 62-56 56-180-180ZM618-20Q584-9 549.5-4.5T480 0q-94 0-177.5-33.5t-148-93Q90-186 49-266.5T0-440h80q8 72 38.5 134.5t79 110Q246-148 309-118t135 36l-62-62 56-56L618-20ZM480-480Z"
+              ></path></svg
+            >
+          </button>
         </div>
-        
+
         <div id="controls">
           <button id="start-scan">スキャン開始</button>
           <button id="rescan" style="display: none;">再スキャン</button>
-          <button id="camera-switch" style="display: none;">カメラ切り替え</button>
+          <button id="debug-toggle">デバッグ表示</button>
         </div>
-        
+
+        <!-- カメラ選択モーダル -->
+        <div id="camera-modal" class="modal">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3>カメラを選択</h3>
+              <button id="close-modal" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+              <div id="camera-list"></div>
+            </div>
+          </div>
+        </div>
+
         <div id="camera-info" style="display: none;"></div>
-        
+
+        <div id="debug-info" style="display: none;">
+          <h4>デバッグ情報</h4>
+          <div id="detection-stats"></div>
+          <div id="preprocessed-debug">
+            <h5>スキャン領域抽出結果</h5>
+            <canvas id="preprocessed-canvas"></canvas>
+          </div>
+        </div>
+
         <div id="result-section">
           <div id="status">カメラの開始ボタンを押してください</div>
           <div id="scanned-code" style="display: none;">
@@ -62,59 +112,219 @@ const description = 'すこやかミルクのシリアルコードをスキャ�
     padding: 0;
     box-sizing: border-box;
   }
-  
+
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family:
+      -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     line-height: 1.6;
     color: #333;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
   }
-  
+
   main {
     max-width: 600px;
     margin: 0 auto;
     padding: 20px;
   }
-  
+
   header {
     text-align: center;
     margin-bottom: 30px;
     color: white;
   }
-  
+
   h1 {
     font-size: 2.5rem;
     font-weight: 700;
     margin-bottom: 10px;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
-  
+
   header p {
     font-size: 1.1rem;
     opacity: 0.9;
   }
-  
+
   #scanner-container {
     background: white;
     border-radius: 16px;
     padding: 24px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   }
-  
+
   #camera-section {
     position: relative;
     margin-bottom: 20px;
+    max-width: 100%;
+    overflow: hidden;
   }
-  
+
+  /* カメラ切り替えボタン */
+  .camera-switch-btn {
+    position: absolute;
+    bottom: 16px;
+    right: calc(50% - 184px);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10;
+  }
+
+  .camera-switch-btn:hover {
+    background: rgba(0, 0, 0, 0.9);
+    transform: scale(1.1);
+  }
+
+  .camera-switch-btn svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* モバイルデバイスでのカメラ切り替えボタン */
+  @media (max-width: 768px) {
+    .camera-switch-btn {
+      width: 48px;
+      height: 48px;
+      bottom: 20px;
+      right: 20px;
+    }
+
+    .camera-switch-btn svg {
+      width: 32px;
+      height: 32px;
+    }
+  }
+
+  /* モーダル */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-content {
+    background-color: white;
+    margin: 10% auto;
+    padding: 0;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.3s ease;
+  }
+
+  @keyframes modalSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-50px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 1.2rem;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+  }
+
+  .close-btn:hover {
+    background-color: #f0f0f0;
+  }
+
+  .modal-body {
+    padding: 24px;
+  }
+
+  #camera-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .camera-option {
+    padding: 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
+  }
+
+  .camera-option:hover {
+    border-color: #667eea;
+    background: #f8f9ff;
+  }
+
+  .camera-option.selected {
+    border-color: #667eea;
+    background: #667eea;
+    color: white;
+  }
+
+  .camera-option h4 {
+    margin: 0 0 4px 0;
+    font-size: 1rem;
+  }
+
+  .camera-option p {
+    margin: 0;
+    font-size: 0.9rem;
+    opacity: 0.7;
+  }
+
   #video {
     width: 100%;
-    max-width: 500px;
-    height: auto;
+    max-width: 400px;
+    max-height: 400px;
+    aspect-ratio: 1;
     border-radius: 12px;
     background: #f0f0f0;
+    margin: 0 auto;
+    display: block;
   }
-  
+
   #scan-overlay {
     position: absolute;
     top: 0;
@@ -123,20 +333,20 @@ const description = 'すこやかミルクのシリアルコードをスキャ�
     bottom: 0;
     pointer-events: none;
   }
-  
+
   #scan-frame {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 132px;  /* 11mm ≈ 132px (3mm = 36px基準) */
+    width: 132px; /* 11mm ≈ 132px (3mm = 36px基準) */
     height: 108px; /* 9mm ≈ 108px */
-    border: 2px solid #4CAF50;
+    border: 2px solid #4caf50;
     border-radius: 4px;
     background: rgba(76, 175, 80, 0.05);
     animation: pulse 2s infinite;
   }
-  
+
   /* 括弧ガイドの描画 */
   #scan-frame::before,
   #scan-frame::after {
@@ -145,11 +355,11 @@ const description = 'すこやかミルクのシリアルコードをスキャ�
     top: 10px;
     bottom: 10px;
     width: 6px;
-    border: 3px solid #FF6B35;
+    border: 3px solid #ff6b35;
     border-radius: 2px;
     background: rgba(255, 107, 53, 0.2);
   }
-  
+
   /* 左括弧 [ */
   #scan-frame::before {
     left: 12px;
@@ -157,7 +367,7 @@ const description = 'すこやかミルクのシリアルコードをスキャ�
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
   }
-  
+
   /* 右括弧 ] */
   #scan-frame::after {
     right: 12px;
@@ -165,7 +375,7 @@ const description = 'すこやかミルクのシリアルコードをスキャ�
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
   }
-  
+
   /* 括弧ガイドに説明テキストを追加 */
   #scan-overlay::after {
     content: 'コードを [ ] の間に合わせてください';
@@ -176,24 +386,30 @@ const description = 'すこやかミルクのシリアルコードをスキャ�
     color: white;
     font-size: 0.9rem;
     font-weight: 600;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
     white-space: nowrap;
   }
-  
+
   @keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
-    70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+    0% {
+      box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+    }
   }
-  
+
   #controls {
     display: flex;
     gap: 12px;
     margin-bottom: 20px;
     flex-wrap: wrap;
   }
-  
-  button {
+
+  #controls button {
     flex: 1;
     min-width: 120px;
     padding: 12px 20px;
@@ -204,43 +420,43 @@ const description = 'すこやかミルクのシリアルコードをスキャ�
     cursor: pointer;
     transition: all 0.3s ease;
   }
-  
+
   #start-scan {
-    background: #4CAF50;
+    background: #4caf50;
     color: white;
   }
-  
+
   #start-scan:hover:not(:disabled) {
     background: #45a049;
     transform: translateY(-2px);
   }
-  
+
   #rescan {
-    background: #2196F3;
+    background: #2196f3;
     color: white;
   }
-  
+
   #rescan:hover:not(:disabled) {
-    background: #1976D2;
+    background: #1976d2;
     transform: translateY(-2px);
   }
-  
+
   #camera-switch {
-    background: #9C27B0;
+    background: #9c27b0;
     color: white;
   }
-  
+
   #camera-switch:hover:not(:disabled) {
-    background: #7B1FA2;
+    background: #7b1fa2;
     transform: translateY(-2px);
   }
-  
+
   button:disabled {
     background: #ccc;
     cursor: not-allowed;
     transform: none;
   }
-  
+
   #camera-info {
     padding: 12px;
     margin-bottom: 16px;
@@ -252,11 +468,11 @@ const description = 'すこやかミルクのシリアルコードをスキャ�
     font-weight: 500;
     text-align: center;
   }
-  
+
   #result-section {
     text-align: center;
   }
-  
+
   #status {
     padding: 16px;
     border-radius: 8px;
@@ -264,14 +480,14 @@ const description = 'すこやかミルクのシリアルコードをスキャ�
     color: #666;
     font-weight: 500;
   }
-  
+
   #scanned-code {
     padding: 20px;
     background: #e8f5e8;
     border-radius: 8px;
     margin-top: 16px;
   }
-  
+
   #code-text {
     font-family: 'Monaco', 'Menlo', monospace;
     font-size: 1.2rem;
@@ -284,36 +500,93 @@ const description = 'すこやかミルクのシリアルコードをスキャ�
     word-break: break-all;
     white-space: pre-line; /* 改行文字を正しく表示 */
   }
-  
+
   #copy-button {
-    background: #FF9800;
+    background: #ff9800;
     color: white;
     margin-top: 12px;
   }
-  
+
   #copy-button:hover {
-    background: #F57C00;
+    background: #f57c00;
     transform: translateY(-2px);
   }
-  
+
+  /* デバッグ用スタイル */
+  #debug-toggle {
+    background: #607d8b;
+    color: white;
+  }
+
+  #debug-toggle:hover:not(:disabled) {
+    background: #455a64;
+    transform: translateY(-2px);
+  }
+
+  #debug-canvas {
+    width: 100%;
+    max-width: 400px;
+    max-height: 400px;
+    aspect-ratio: 1;
+    border-radius: 12px;
+    border: 2px solid #607d8b;
+    margin: 0 auto;
+    display: block;
+    position: relative;
+  }
+
+  #debug-info {
+    padding: 16px;
+    margin-bottom: 16px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 0.9rem;
+  }
+
+  #debug-info h4 {
+    margin-bottom: 12px;
+    color: #495057;
+  }
+
+  #debug-info h5 {
+    margin: 16px 0 8px 0;
+    color: #6c757d;
+    font-size: 0.85rem;
+  }
+
+  #preprocessed-canvas {
+    border: 2px solid #ff9800;
+    border-radius: 8px;
+    margin: 10px auto;
+    display: block;
+    background: #f5f5f5;
+  }
+
+  #detection-stats {
+    font-family: monospace;
+    white-space: pre-line;
+    color: #666;
+  }
+
   /* モバイル対応 */
   @media (max-width: 480px) {
     main {
       padding: 16px;
     }
-    
+
     h1 {
       font-size: 2rem;
     }
-    
+
     #scanner-container {
       padding: 16px;
     }
-    
+
     #controls {
       flex-direction: column;
     }
-    
+
     button {
       min-width: auto;
     }
