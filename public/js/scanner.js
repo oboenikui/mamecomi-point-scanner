@@ -1,5 +1,5 @@
 /* eslint-env browser */
-/* global setInterval, clearInterval, performance */
+/* global setInterval, clearInterval, performance, URLSearchParams */
 
 // まめコミポイントスキャナー - メインスクリプト
 
@@ -31,6 +31,9 @@ class MameComicScanner {
     this.rescanButton = document.getElementById('rescan');
     this.copyButton = document.getElementById('copy-button');
     this.cameraSwitchButton = document.getElementById('camera-switch');
+    this.closeModalButton = document.getElementById('close-modal');
+    this.cameraModal = document.getElementById('camera-modal');
+    this.cameraList = document.getElementById('camera-list');
     
     // ステータス表示
     this.statusElement = document.getElementById('status');
@@ -42,10 +45,36 @@ class MameComicScanner {
     this.debugToggleButton = document.getElementById('debug-toggle');
     this.debugInfoElement = document.getElementById('debug-info');
     this.detectionStatsElement = document.getElementById('detection-stats');
+    this.preprocessedCanvas = document.getElementById('preprocessed-canvas');
+    this.preprocessedCtx = this.preprocessedCanvas.getContext('2d');
+    
+    // クエリパラメータでデバッグモードをチェック
+    const urlParams = new URLSearchParams(window.location.search);
+    this.debugMode = urlParams.get('debug') === 'true';
+    
+    // デバッグボタンの表示/非表示を設定
+    if (this.debugToggleButton) {
+      this.debugToggleButton.style.display = this.debugMode ? 'inline-block' : 'none';
+    }
     
     // OCRデバッグ情報
     this.ocrResults = [];
     this.currentOcrResult = null;
+    this.currentScanRegion = null;
+    
+    // デバッグモードが有効な場合、初期状態でデバッグ情報を表示
+    if (this.debugMode) {
+      this.debugInfoElement.style.display = 'block';
+      this.debugCanvas.style.display = 'block';
+      this.video.style.display = 'none';
+      this.debugToggleButton.textContent = 'デバッグ非表示';
+      this.debugToggleButton.style.background = '#FF5722';
+    }
+    
+    // カメラ切り替えボタンは初期状態で非表示
+    if (this.cameraSwitchButton) {
+      this.cameraSwitchButton.style.display = 'none';
+    }
     
     this.initializeEventListeners();
     this.initializeResizeHandler();
@@ -83,7 +112,7 @@ class MameComicScanner {
       // 文字認識のパラメータを設定
       await this.tesseractWorker.setParameters({
         tessedit_char_whitelist: 'ACEFGHJKLMNPRTWXY0123456789',
-        tessedit_pageseg_mode: window.Tesseract.PSM.SINGLE_BLOCK, // Uniform block of text
+        tessedit_pageseg_mode: window.Tesseract.PSM.AUTO, // Uniform block of text
         tessedit_ocr_engine_mode: '1', // Neural nets LSTM engine only
       });
       
@@ -102,10 +131,8 @@ class MameComicScanner {
       console.log(devices);
       this.availableCameras = devices.filter(device => device.kind === 'videoinput');
       
-      // 複数のカメラが利用可能な場合はカメラ切り替えボタンを表示
-      if (this.availableCameras.length > 1) {
-        this.showCameraSwitchButton();
-      }
+      // カメラ一覧を取得（ボタン表示はカメラ開始時に行う）
+      console.log(`${this.availableCameras.length}個のカメラを検出しました`);
       
     } catch (error) {
       console.error('カメラ列挙エラー:', error);
@@ -118,14 +145,98 @@ class MameComicScanner {
     this.copyButton.addEventListener('click', () => this.copyToClipboard());
     this.debugToggleButton.addEventListener('click', () => this.toggleDebugMode());
     
+    // カメラ切り替えボタン
     if (this.cameraSwitchButton) {
-      this.cameraSwitchButton.addEventListener('click', () => this.switchCamera());
+      this.cameraSwitchButton.addEventListener('click', async () => await this.showCameraModal());
+    }
+    
+    // モーダル関連
+    if (this.closeModalButton) {
+      this.closeModalButton.addEventListener('click', () => this.hideCameraModal());
+    }
+    if (this.cameraModal) {
+      this.cameraModal.addEventListener('click', (e) => {
+        if (e.target === this.cameraModal) {
+          this.hideCameraModal();
+        }
+      });
     }
   }
   
-  showCameraSwitchButton() {
-    if (this.cameraSwitchButton) {
-      this.cameraSwitchButton.style.display = 'block';
+  async showCameraModal() {
+    if (this.cameraModal && this.cameraList) {
+      // モーダルを開く前に最新のカメラ一覧を取得
+      await this.enumerateCameras();
+      this.populateCameraList();
+      this.cameraModal.style.display = 'block';
+    }
+  }
+
+  hideCameraModal() {
+    if (this.cameraModal) {
+      this.cameraModal.style.display = 'none';
+    }
+  }
+
+  populateCameraList() {
+    if (!this.cameraList) return;
+    
+    this.cameraList.innerHTML = '';
+    
+    this.availableCameras.forEach((camera, index) => {
+      const cameraOption = document.createElement('div');
+      cameraOption.className = 'camera-option';
+      if (camera.deviceId === this.currentDeviceId) {
+        cameraOption.classList.add('selected');
+      }
+      
+      const cameraName = this.getCameraDisplayName(camera);
+      
+      // 安全にテキストを設定
+      const h4 = document.createElement('h4');
+      h4.textContent = cameraName;
+      
+      cameraOption.appendChild(h4);
+      
+      cameraOption.addEventListener('click', () => {
+        this.selectCamera(camera);
+        this.hideCameraModal();
+      });
+      
+      this.cameraList.appendChild(cameraOption);
+    });
+  }
+
+  async selectCamera(camera) {
+    try {
+      // 現在のストリームを停止
+      if (this.stream) {
+        this.stream.getTracks().forEach(track => track.stop());
+      }
+      
+      this.currentDeviceId = camera.deviceId;
+      
+      // 新しいカメラでストリームを開始
+      const constraints = this.getCameraConstraints();
+      this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+      this.video.srcObject = this.stream;
+      
+      this.video.onloadedmetadata = () => {
+        this.setupVideoDisplay();
+        
+        // カメラが開始されたら、複数のカメラがある場合は切り替えボタンを表示
+        if (this.availableCameras.length > 1 && this.cameraSwitchButton) {
+          this.cameraSwitchButton.style.display = 'flex';
+        }
+        
+        if (this.state === 'scanning') {
+          this.beginContinuousScanning();
+        }
+      };
+      
+    } catch (error) {
+      console.error('カメラ選択エラー:', error);
+      this.updateStatus('カメラの切り替えに失敗しました');
     }
   }
   
@@ -155,12 +266,24 @@ class MameComicScanner {
       this.stream = await navigator.mediaDevices.getUserMedia(constraints);
       this.video.srcObject = this.stream;
       
-      // カメラ情報を表示
+      // カメラ情報を表示（一時的に）
       const cameraName = this.getCameraDisplayName(nextCamera);
-      this.showCameraInfo(`カメラ切り替え: ${cameraName}`);
+      this.updateStatus(`カメラ切り替え: ${cameraName}`);
+      
+      // 3秒後にステータスをクリア
+      setTimeout(() => {
+        if (this.state === 'scanning') {
+          this.updateStatus('スキャン中...');
+        }
+      }, 3000);
       
       this.video.onloadedmetadata = () => {
         this.setupVideoDisplay();
+        
+        // カメラが開始されたら、複数のカメラがある場合は切り替えボタンを表示
+        if (this.availableCameras.length > 1 && this.cameraSwitchButton) {
+          this.cameraSwitchButton.style.display = 'flex';
+        }
         
         if (this.state === 'scanning') {
           this.beginContinuousScanning();
@@ -239,6 +362,12 @@ class MameComicScanner {
       
       this.video.onloadedmetadata = () => {
         this.setupVideoDisplay();
+        
+        // カメラが開始されたら、複数のカメラがある場合は切り替えボタンを表示
+        if (this.availableCameras.length > 1 && this.cameraSwitchButton) {
+          this.cameraSwitchButton.style.display = 'flex';
+        }
+        
         this.beginContinuousScanning();
       };
       
@@ -274,6 +403,11 @@ class MameComicScanner {
     }
     
     this.video.srcObject = null;
+    
+    // カメラが停止されたら切り替えボタンを非表示
+    if (this.cameraSwitchButton) {
+      this.cameraSwitchButton.style.display = 'none';
+    }
   }
   
   // リソースクリーンアップ
@@ -405,9 +539,9 @@ class MameComicScanner {
         }
         
         // 有効な16文字のコードの場合のみ成功カウントに追加
-        if (result && this.isValidCode(result)) {
-          scanResults.push(result);
-          console.log(`有効スキャン ${scanResults.length}/${targetSuccessCount}: ${result}`);
+        if (result && result.guideDetected && result.scannedText && this.isValidCode(result.scannedText)) {
+          scanResults.push(result.scannedText);
+          console.log(`有効スキャン ${scanResults.length}/${targetSuccessCount}: ${result.scannedText}`);
         }
       }
       
@@ -550,7 +684,22 @@ class MameComicScanner {
     if (!guideDetection.found) {
       // ガイドが検出できない場合は従来の固定位置を使用
       console.log('ガイドマーカーが検出できません。固定位置を使用します。');
-      return this.extractFixedRegion(src);
+      const fixedRegion = this.extractFixedRegion(src);
+      
+      // デバッグ用に固定領域を保存
+      if (this.debugMode) {
+        this.currentScanRegion = {
+          x: Math.floor(src.cols / 2) - 66,
+          y: Math.floor(src.rows / 2) - 54,
+          width: 132,
+          height: 108,
+          image: fixedRegion.clone(),
+          type: 'fixed'
+        };
+        this.updateScanRegionDebugView();
+      }
+      
+      return fixedRegion;
     }
     
     console.log('ガイドマーカーを検出しました。角度補正を実行します。');
@@ -560,6 +709,20 @@ class MameComicScanner {
     
     // 補正後の画像からコード領域を抽出
     const codeRegion = this.extractCodeRegionFromCorrected(correctedImage);
+    
+    // デバッグ用に補正後の領域を保存
+    if (this.debugMode) {
+      this.currentScanRegion = {
+        x: 0, // 補正後の画像内での座標
+        y: 0,
+        width: codeRegion.cols,
+        height: codeRegion.rows,
+        image: codeRegion.clone(),
+        type: 'corrected',
+        guideDetection: guideDetection
+      };
+      this.updateScanRegionDebugView();
+    }
     
     // 補正画像のメモリを解放
     correctedImage.delete();
@@ -942,16 +1105,19 @@ class MameComicScanner {
   
   extractCodeRegionFromCorrected(correctedImage) {
     // 補正済み画像からコード領域を抽出
-    // ガイド枠内の特定位置（通常は中央やや上部）からコード領域を取得
+    // 固定領域と同じサイズ（132x108px）を使用
     const totalWidth = correctedImage.cols;
     const totalHeight = correctedImage.rows;
     
-    // コード領域の推定位置（ガイド枠の中央部分）
-    const codeWidth = Math.min(totalWidth * 0.8, 200);  // ガイド幅の80%、最大200px
-    const codeHeight = Math.min(totalHeight * 0.4, 80); // ガイド高さの40%、最大80px
+    // 固定領域より少し大きめのサイズ
+    const codeWidth = 180;
+    const codeHeight = 128;
     
-    const startX = (totalWidth - codeWidth) / 2;
-    const startY = (totalHeight - codeHeight) / 2;
+    // 中央に配置
+    const startX = Math.floor((totalWidth - codeWidth) / 2);
+    const startY = Math.floor((totalHeight - codeHeight) / 2);
+    
+    console.log(`コード領域抽出: 画像サイズ=${totalWidth}x${totalHeight}, 抽出領域=${codeWidth}x${codeHeight}, 開始位置=(${startX}, ${startY})`);
     
     const rect = new window.cv.Rect(startX, startY, codeWidth, codeHeight);
     
@@ -988,6 +1154,8 @@ class MameComicScanner {
     );
     window.cv.morphologyEx(binary, processed, window.cv.MORPH_CLOSE, kernel);
     
+
+    
     // メモリクリーンアップ
     gray.delete();
     binary.delete();
@@ -998,42 +1166,14 @@ class MameComicScanner {
   
   async performOCR(processedImage) {
     try {
-      // OpenCV MatをCanvasに描画
-      const tempCanvas = document.createElement('canvas');
-      window.cv.imshow(tempCanvas, processedImage);
+      console.log('OCR処理開始: 単一画像OCR');
       
-      // Tesseract.jsでOCR実行
-      const { data: { text } } = await this.tesseractWorker.recognize(tempCanvas);
-      console.log('OCR生結果:', text);
+      // 単一画像でOCR実行
+      const result = await this.performSingleOCR(processedImage, 'full');
       
-      // 結果を検証・整形
-      const formattedCode = this.validateAndFormatCode(text);
+      console.log('OCR完了:', result);
       
-      // デバッグ用にOCR結果を保存
-      const ocrResult = {
-        timestamp: Date.now(),
-        rawText: text,
-        cleanText: text.replace(/[\s\n\r]/g, ''),
-        formattedCode: formattedCode,
-        valid: formattedCode !== null,
-        text: formattedCode || text.replace(/[\s\n\r]/g, '') || '(空)'
-      };
-      
-      this.currentOcrResult = ocrResult;
-      this.ocrResults.push(ocrResult);
-      
-      // 履歴は最大20件まで保持
-      if (this.ocrResults.length > 20) {
-        this.ocrResults.shift();
-      }
-      
-      console.log('OCR結果:', {
-        生テキスト: text,
-        整形後: formattedCode,
-        有効: formattedCode !== null
-      });
-      
-      return formattedCode;
+      return result;
       
     } catch (error) {
       console.error('OCR実行エラー:', error);
@@ -1051,6 +1191,53 @@ class MameComicScanner {
       return null;
     }
   }
+  
+
+  
+  async performSingleOCR(image, label) {
+    try {
+      // OpenCV MatをCanvasに描画
+      const tempCanvas = document.createElement('canvas');
+      window.cv.imshow(tempCanvas, image);
+      
+      // Tesseract.jsでOCR実行
+      const { data: { text } } = await this.tesseractWorker.recognize(tempCanvas);
+      console.log(`OCR結果(${label}):`, text);
+      
+      // 結果をクリーニング
+      const cleanText = text.replace(/[\s\n\r]/g, '');
+      
+      // 結果を検証・整形
+      const formattedCode = this.validateAndFormatCode(cleanText);
+      
+      // デバッグ用にOCR結果を保存
+      const ocrResult = {
+        timestamp: Date.now(),
+        label: label,
+        rawText: text,
+        cleanText: cleanText,
+        formattedCode: formattedCode,
+        valid: formattedCode !== null,
+        text: formattedCode || cleanText || '(空)'
+      };
+      
+      this.currentOcrResult = ocrResult;
+      this.ocrResults.push(ocrResult);
+      
+      // 履歴は最大20件まで保持
+      if (this.ocrResults.length > 20) {
+        this.ocrResults.shift();
+      }
+      
+      return formattedCode || cleanText;
+      
+    } catch (error) {
+      console.error(`OCR実行エラー(${label}):`, error);
+      return '';
+    }
+  }
+  
+
   
   validateAndFormatCode(rawText) {
     if (!rawText) return null;
@@ -1235,6 +1422,41 @@ class MameComicScanner {
     }
   }
   
+  updateScanRegionDebugView() {
+    if (!this.debugMode || !this.currentScanRegion) return;
+    
+    try {
+      const scanRegion = this.currentScanRegion;
+      
+      // キャンバスサイズを検出した領域の実際のサイズに設定
+      const actualWidth = scanRegion.width;
+      const actualHeight = scanRegion.height;
+      
+      this.preprocessedCanvas.width = actualWidth;
+      this.preprocessedCanvas.height = actualHeight;
+      this.preprocessedCanvas.style.width = actualWidth + 'px';
+      this.preprocessedCanvas.style.height = actualHeight + 'px';
+      
+      // 検出されたスキャン領域を表示
+      if (scanRegion.image) {
+        if (scanRegion.image.channels() === 1) {
+          // グレースケール画像の場合はRGBに変換
+          const rgbMat = new window.cv.Mat();
+          window.cv.cvtColor(scanRegion.image, rgbMat, window.cv.COLOR_GRAY2RGB);
+          window.cv.imshow(this.preprocessedCanvas, rgbMat);
+          rgbMat.delete();
+        } else {
+          window.cv.imshow(this.preprocessedCanvas, scanRegion.image);
+        }
+      }
+      
+      console.log(`スキャン領域デバッグビュー更新: ${actualWidth}x${actualHeight}px, 座標:(${scanRegion.x}, ${scanRegion.y})`);
+      
+    } catch (error) {
+      console.error('スキャン領域デバッグビューの更新エラー:', error);
+    }
+  }
+
   updateDetectionStats(stats) {
     if (!this.debugMode) return;
     
@@ -1401,6 +1623,207 @@ ${recentOcrResults || '  履歴なし'}
           const start = new window.cv.Point(corners[i].x - cropOffsetX, corners[i].y - cropOffsetY);
           const end = new window.cv.Point(corners[(i + 1) % 4].x - cropOffsetX, corners[(i + 1) % 4].y - cropOffsetY);
           window.cv.line(display, start, end, color, 2);
+        }
+      }
+      
+      // 文字領域（上段・下段）を描画
+      if (this.currentTextRegions) {
+        console.log('文字領域を描画開始:', this.currentTextRegions);
+        
+        // 文字領域の座標は角度補正後の画像内の座標なので、
+        // 元画像座標系に逆変換する必要がある
+        if (this.currentTextRegions.isCorrectedCoordinates && detectionResult.found && detectionResult.corners) {
+          console.log('角度補正後の座標を逆変換して描画');
+          // 角度補正の逆変換を適用して元画像座標系に戻す
+          const corners = detectionResult.corners;
+          
+          // 角度補正時のdstPointsを再計算
+          const width = Math.max(
+            Math.sqrt(Math.pow(corners[1].x - corners[0].x, 2) + Math.pow(corners[1].y - corners[0].y, 2)),
+            Math.sqrt(Math.pow(corners[2].x - corners[3].x, 2) + Math.pow(corners[2].y - corners[3].y, 2))
+          );
+          const height = Math.max(
+            Math.sqrt(Math.pow(corners[3].x - corners[0].x, 2) + Math.pow(corners[3].y - corners[0].y, 2)),
+            Math.sqrt(Math.pow(corners[2].x - corners[1].x, 2) + Math.pow(corners[2].y - corners[1].y, 2))
+          );
+          
+          const dstPoints = window.cv.matFromArray(4, 1, window.cv.CV_32FC2, [
+            0, 0,           // 左上
+            width, 0,       // 右上  
+            width, height,  // 右下
+            0, height       // 左下
+          ]);
+          
+          const srcPoints = window.cv.matFromArray(4, 1, window.cv.CV_32FC2, [
+            corners[0].x, corners[0].y,
+            corners[1].x, corners[1].y,
+            corners[2].x, corners[2].y,
+            corners[3].x, corners[3].y
+          ]);
+          
+          // 逆変換マトリックスを取得
+          const inverseTransform = window.cv.getPerspectiveTransform(dstPoints, srcPoints);
+          
+          // 各文字領域を逆変換
+          const transformRegion = (region) => {
+            const correctedCorners = [
+              [region.x, region.y],
+              [region.x + region.width, region.y],
+              [region.x + region.width, region.y + region.height],
+              [region.x, region.y + region.height]
+            ];
+            
+            const transformedCorners = [];
+            for (const corner of correctedCorners) {
+              const src = window.cv.matFromArray(1, 1, window.cv.CV_32FC2, corner);
+              const dst = new window.cv.Mat();
+              window.cv.perspectiveTransform(src, dst, inverseTransform);
+              const point = dst.data32F;
+              transformedCorners.push({ x: point[0], y: point[1] });
+              src.delete();
+              dst.delete();
+            }
+            
+            // 変換後の境界ボックスを計算
+            const xs = transformedCorners.map(p => p.x);
+            const ys = transformedCorners.map(p => p.y);
+            return {
+              x: Math.min(...xs),
+              y: Math.min(...ys),
+              width: Math.max(...xs) - Math.min(...xs),
+              height: Math.max(...ys) - Math.min(...ys)
+            };
+          };
+          
+          // メイン文字領域
+          if (this.currentTextRegions.main) {
+            const main = transformRegion(this.currentTextRegions.main);
+            const mainColor = new window.cv.Scalar(255, 0, 255, 255); // マゼンタ
+            const topLeft = new window.cv.Point(main.x - cropOffsetX, main.y - cropOffsetY);
+            const bottomRight = new window.cv.Point(main.x + main.width - cropOffsetX, main.y + main.height - cropOffsetY);
+            window.cv.rectangle(display, topLeft, bottomRight, mainColor, 2);
+            window.cv.putText(display, 'TEXT', new window.cv.Point(main.x - cropOffsetX + 5, main.y - cropOffsetY + 15), 
+              window.cv.FONT_HERSHEY_SIMPLEX, 0.5, mainColor, 1);
+          }
+          
+          // 上段領域
+          if (this.currentTextRegions.top) {
+            const top = transformRegion(this.currentTextRegions.top);
+            const topColor = new window.cv.Scalar(255, 255, 0, 255); // シアン
+            const topLeft = new window.cv.Point(top.x - cropOffsetX, top.y - cropOffsetY);
+            const bottomRight = new window.cv.Point(top.x + top.width - cropOffsetX, top.y + top.height - cropOffsetY);
+            window.cv.rectangle(display, topLeft, bottomRight, topColor, 1);
+            window.cv.putText(display, 'TOP', new window.cv.Point(top.x - cropOffsetX + 5, top.y - cropOffsetY + 12), 
+              window.cv.FONT_HERSHEY_SIMPLEX, 0.4, topColor, 1);
+          }
+          
+          // 下段領域
+          if (this.currentTextRegions.bottom) {
+            const bottom = transformRegion(this.currentTextRegions.bottom);
+            const bottomColor = new window.cv.Scalar(0, 165, 255, 255); // オレンジ
+            const topLeft = new window.cv.Point(bottom.x - cropOffsetX, bottom.y - cropOffsetY);
+            const bottomRight = new window.cv.Point(bottom.x + bottom.width - cropOffsetX, bottom.y + bottom.height - cropOffsetY);
+            window.cv.rectangle(display, topLeft, bottomRight, bottomColor, 1);
+            window.cv.putText(display, 'BTM', new window.cv.Point(bottom.x - cropOffsetX + 5, bottom.y - cropOffsetY + 12), 
+              window.cv.FONT_HERSHEY_SIMPLEX, 0.4, bottomColor, 1);
+          }
+          
+          // メモリクリーンアップ
+          dstPoints.delete();
+          srcPoints.delete();
+          inverseTransform.delete();
+        } else {
+          console.log('角度補正なし、または通常座標系での描画');
+          
+          // フォールバック: 角度補正なしの場合、そのまま描画
+          // メイン文字領域
+          if (this.currentTextRegions.main) {
+            const main = this.currentTextRegions.main;
+            const mainColor = new window.cv.Scalar(255, 0, 255, 255); // マゼンタ
+            const topLeft = new window.cv.Point(main.x - cropOffsetX, main.y - cropOffsetY);
+            const bottomRight = new window.cv.Point(main.x + main.width - cropOffsetX, main.y + main.height - cropOffsetY);
+            window.cv.rectangle(display, topLeft, bottomRight, mainColor, 2);
+            window.cv.putText(display, 'TEXT', new window.cv.Point(main.x - cropOffsetX + 5, main.y - cropOffsetY + 15), 
+              window.cv.FONT_HERSHEY_SIMPLEX, 0.5, mainColor, 1);
+          }
+          
+          // 上段領域
+          if (this.currentTextRegions.top) {
+            const top = this.currentTextRegions.top;
+            const topColor = new window.cv.Scalar(255, 255, 0, 255); // シアン
+            const topLeft = new window.cv.Point(top.x - cropOffsetX, top.y - cropOffsetY);
+            const bottomRight = new window.cv.Point(top.x + top.width - cropOffsetX, top.y + top.height - cropOffsetY);
+            window.cv.rectangle(display, topLeft, bottomRight, topColor, 1);
+            window.cv.putText(display, 'TOP', new window.cv.Point(top.x - cropOffsetX + 5, top.y - cropOffsetY + 12), 
+              window.cv.FONT_HERSHEY_SIMPLEX, 0.4, topColor, 1);
+          }
+          
+          // 下段領域
+          if (this.currentTextRegions.bottom) {
+            const bottom = this.currentTextRegions.bottom;
+            const bottomColor = new window.cv.Scalar(0, 165, 255, 255); // オレンジ
+            const topLeft = new window.cv.Point(bottom.x - cropOffsetX, bottom.y - cropOffsetY);
+            const bottomRight = new window.cv.Point(bottom.x + bottom.width - cropOffsetX, bottom.y + bottom.height - cropOffsetY);
+            window.cv.rectangle(display, topLeft, bottomRight, bottomColor, 1);
+            window.cv.putText(display, 'BTM', new window.cv.Point(bottom.x - cropOffsetX + 5, bottom.y - cropOffsetY + 12), 
+              window.cv.FONT_HERSHEY_SIMPLEX, 0.4, bottomColor, 1);
+          }
+        }
+      }
+      
+      // エッジ検出結果を重ねて表示
+      if (this.currentEdgeDetection) {
+        try {
+          // エッジ検出結果を緑色で重ねて描画
+          if (this.currentEdgeDetection.edges) {
+            const edgesMask = new window.cv.Mat();
+            const edgesColored = new window.cv.Mat();
+            
+            // エッジを3チャンネルに変換
+            window.cv.cvtColor(this.currentEdgeDetection.edges, edgesColored, window.cv.COLOR_GRAY2RGB);
+            
+            // エッジ部分を緑色に変更
+            const greenColor = new window.cv.Scalar(0, 255, 0);
+            const mask = new window.cv.Mat();
+            window.cv.threshold(this.currentEdgeDetection.edges, mask, 127, 255, window.cv.THRESH_BINARY);
+            edgesColored.setTo(greenColor, mask);
+            
+            // 元画像に半透明で重ねる
+            const alpha = 0.3; // 透明度
+            const beta = 1 - alpha;
+            window.cv.addWeighted(display, beta, edgesColored, alpha, 0, display);
+            
+            // メモリクリーンアップ
+            edgesMask.delete();
+            edgesColored.delete();
+            mask.delete();
+          }
+          
+          // 膨張結果を青色で重ねて描画
+          if (this.currentEdgeDetection.dilated) {
+            const dilatedColored = new window.cv.Mat();
+            
+            // 膨張結果を3チャンネルに変換
+            window.cv.cvtColor(this.currentEdgeDetection.dilated, dilatedColored, window.cv.COLOR_GRAY2RGB);
+            
+            // 膨張部分を青色に変更
+            const blueColor = new window.cv.Scalar(255, 0, 0);
+            const mask = new window.cv.Mat();
+            window.cv.threshold(this.currentEdgeDetection.dilated, mask, 127, 255, window.cv.THRESH_BINARY);
+            dilatedColored.setTo(blueColor, mask);
+            
+            // 元画像に半透明で重ねる
+            const alpha = 0.2; // より薄く表示
+            const beta = 1 - alpha;
+            window.cv.addWeighted(display, beta, dilatedColored, alpha, 0, display);
+            
+            // メモリクリーンアップ
+            dilatedColored.delete();
+            mask.delete();
+          }
+          
+        } catch (error) {
+          console.error('エッジ検出結果の描画エラー:', error);
         }
       }
       
