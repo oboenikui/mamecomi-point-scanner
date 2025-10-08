@@ -1,0 +1,443 @@
+.app {
+  text-align: center;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 30px;
+  color: white;
+}
+
+header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+header p {
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.scanner-container {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.camera-section {
+  position: relative;
+  margin-bottom: 20px;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* カメラ切り替えボタン */
+.camera-switch-btn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s;
+  z-index: 10;
+}
+
+.camera-switch-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+/* モバイルデバイスでのカメラ切り替えボタン */
+@media (max-width: 768px) {
+  .camera-switch-btn {
+    width: 48px;
+    height: 48px;
+    bottom: 20px;
+    right: 20px;
+  }
+
+  .camera-switch-btn svg {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* モーダル */
+.modal {
+  display: block;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background-color: white;
+  margin: 10% auto;
+  padding: 0;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.close-btn:hover {
+  background-color: #f0f0f0;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.camera-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.camera-option {
+  padding: 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.camera-option:hover {
+  border-color: #667eea;
+  background: #f8f9ff;
+}
+
+.camera-option.selected {
+  border-color: #667eea;
+  background: #667eea;
+  color: white;
+}
+
+.camera-option h4 {
+  margin: 0 0 4px 0;
+  font-size: 1rem;
+}
+
+.camera-option p {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.camera-section video {
+  width: 100%;
+  max-width: 400px;
+  max-height: 400px;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background: #f0f0f0;
+  margin: 0 auto;
+  display: block;
+}
+
+.camera-section canvas {
+  width: 100%;
+  max-width: 400px;
+  max-height: 400px;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background: #f0f0f0;
+  margin: 0 auto;
+  display: block;
+}
+
+.scan-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.scan-frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 33%; /* スキャンフレームの幅を33%に設定 */
+  height: 27%; /* スキャンフレームの高さを27%に設定 (108/400 = 0.27) */
+  max-width: 132px; /* 最大サイズを制限 */
+  max-height: 108px; /* 最大サイズを制限 */
+  border: 2px solid #4caf50;
+  border-radius: 4px;
+  background: rgba(76, 175, 80, 0.05);
+  animation: pulse 2s infinite;
+}
+
+/* 括弧ガイドの描画 */
+.scan-frame::before,
+.scan-frame::after {
+  content: '';
+  position: absolute;
+  top: 9%;
+  bottom: 9%;
+  width: 4.5%;
+  border: 2px solid #ff6b35;
+  border-radius: 2px;
+  background: rgba(255, 107, 53, 0.2);
+}
+
+/* 左括弧 [ */
+.scan-frame::before {
+  left: 9%;
+  border-right: none;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* 右括弧 ] */
+.scan-frame::after {
+  right: 9%;
+  border-left: none;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+/* 括弧ガイドに説明テキストを追加 */
+.scan-overlay::after {
+  content: 'コードを [ ] の間に合わせてください';
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+  }
+}
+
+.controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.controls button {
+  flex: 1;
+  min-width: 120px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.start-scan {
+  background: #4caf50;
+  color: white;
+}
+
+.start-scan:hover:not(:disabled) {
+  background: #45a049;
+  transform: translateY(-2px);
+}
+
+.rescan {
+  background: #2196f3;
+  color: white;
+}
+
+.rescan:hover:not(:disabled) {
+  background: #1976d2;
+  transform: translateY(-2px);
+}
+
+button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.camera-info {
+  padding: 12px;
+  margin-bottom: 16px;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  color: #856404;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.result-section {
+  text-align: center;
+}
+
+.status {
+  padding: 16px;
+  border-radius: 8px;
+  background: #f5f5f5;
+  color: #666;
+  font-weight: 500;
+}
+
+.scanned-code {
+  padding: 20px;
+  background: #e8f5e8;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.code-text {
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #2e7d32;
+  margin: 12px 0;
+  padding: 12px;
+  background: white;
+  border-radius: 6px;
+  word-break: break-all;
+  white-space: pre-line; /* 改行文字を正しく表示 */
+}
+
+.copy-button {
+  background: #ff9800;
+  color: white;
+  margin-top: 12px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.copy-button:hover {
+  background: #f57c00;
+  transform: translateY(-2px);
+}
+
+/* デバッグ表示 */
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+  .app {
+    padding: 10px;
+  }
+
+  header h1 {
+    font-size: 1.5rem;
+  }
+
+  header p {
+    font-size: 0.9rem;
+  }
+
+  .scanner-container {
+    margin-top: 15px;
+  }
+
+  .camera-section {
+    margin-bottom: 15px;
+  }
+
+  .controls {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .controls button {
+    width: 100%;
+  }
+
+  .result-section {
+    margin-top: 15px;
+  }
+
+  .scanned-code {
+    padding: 15px;
+  }
+
+  .code-text {
+    font-size: 1rem;
+    word-break: break-all;
+  }
+
+  .modal-content {
+    width: 90%;
+    max-width: 400px;
+  }
+} 
