@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
 import fs from 'fs'
 import path from 'path'
 
@@ -20,7 +21,59 @@ const httpsConfig = hasCertificates ? {
 } : undefined
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.svg', 'opencv.js'],
+      manifest: {
+        name: 'まめコミポイントスキャナ',
+        short_name: 'まめコミスキャナ',
+        description: 'すこやかミルクのシリアルコードをスキャンしてクリップボードにコピーします',
+        theme_color: '#33A852',
+        background_color: '#D9F0C8',
+        display: 'standalone',
+        orientation: 'portrait',
+        scope: basePath,
+        start_url: basePath,
+        icons: [
+          {
+            src: 'pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png'
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable'
+          }
+        ]
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        maximumFileSizeToCacheInBytes: 15 * 1024 * 1024, // 15MB
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'jsdelivr-cdn',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1年
+              }
+            }
+          }
+        ]
+      }
+    })
+  ],
   base: basePath,
   server: {
     port: 3000,

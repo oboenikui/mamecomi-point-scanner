@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- Safari pinned tabはモノクロで表示されるため、シンプルなシルエット -->
+  
+  <!-- カメラボディ -->
+  <rect x="28" y="40" width="72" height="48" rx="8" fill="#000"/>
+  
+  <!-- レンズ -->
+  <circle cx="64" cy="64" r="20" fill="#fff"/>
+  <circle cx="64" cy="64" r="12" fill="#000"/>
+  
+  <!-- ビューファインダー -->
+  <rect x="82" y="44" width="12" height="8" rx="2" fill="#000"/>
+  
+  <!-- スキャンフレームコーナー -->
+  <path d="M 28 36 L 28 28 L 36 28" stroke="#000" stroke-width="4" fill="none" stroke-linecap="square"/>
+  <path d="M 100 36 L 100 28 L 92 28" stroke="#000" stroke-width="4" fill="none" stroke-linecap="square"/>
+  <path d="M 28 92 L 28 100 L 36 100" stroke="#000" stroke-width="4" fill="none" stroke-linecap="square"/>
+  <path d="M 100 92 L 100 100 L 92 100" stroke="#000" stroke-width="4" fill="none" stroke-linecap="square"/>
+</svg>

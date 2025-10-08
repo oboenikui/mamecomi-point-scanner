@@ -13,10 +13,50 @@ function App() {
   const [cameraInfo, setCameraInfo] = useState<string | null>(null)
   const [codeRegion, setCodeRegion] = useState<CodeRegionInfo | null>(null)
   const [isDebugMode, setIsDebugMode] = useState(false)
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
+  // PWAインストール関数
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt()
+      const { outcome } = await deferredPrompt.userChoice
+      console.log(`ユーザーの選択: ${outcome}`)
+      setDeferredPrompt(null)
+      setShowInstallPrompt(false)
+    }
+  }
+
+  const handleDismissInstall = () => {
+    setShowInstallPrompt(false)
+  }
+
+
+  useEffect(() => {
+    // PWAインストールプロンプトの処理
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+      setShowInstallPrompt(true)
+    }
+
+    const handleAppInstalled = () => {
+      setShowInstallPrompt(false)
+      setDeferredPrompt(null)
+      console.log('PWAがインストールされました')
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    window.addEventListener('appinstalled', handleAppInstalled)
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+      window.removeEventListener('appinstalled', handleAppInstalled)
+    }
+  }, [])
 
   useEffect(() => {
     // クエリパラメータからデバッグモードをチェック
@@ -110,7 +150,7 @@ function App() {
   return (
     <div className="app">
       <header>
-        <h1>まめコミポイントスキャナー</h1>
+        <h1>まめコミポイントスキャナ</h1>
         <p>すこやかミルクのシリアルコードをスキャンしてクリップボードにコピーします</p>
       </header>
 
@@ -250,6 +290,31 @@ function App() {
             </div>
           )}
         </div>
+
+        {/* PWAインストールプロンプト */}
+        {showInstallPrompt && (
+          <div className="pwa-install-prompt">
+            <div className="pwa-install-content">
+              <div className="pwa-install-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L13.09 8.26L19 7L17.74 13.26L22 15L15.74 16.74L17 23L10.74 21.74L9 15L4 13L10.26 11.26L12 2Z" fill="#4CAF50"/>
+                </svg>
+              </div>
+              <div className="pwa-install-text">
+                <h3>アプリをインストール</h3>
+                <p>まめコミポイントスキャナをホーム画面に追加して、より便利にご利用いただけます。</p>
+              </div>
+              <div className="pwa-install-buttons">
+                <button onClick={handleInstallClick} className="pwa-install-btn">
+                  インストール
+                </button>
+                <button onClick={handleDismissInstall} className="pwa-dismiss-btn">
+                  後で
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

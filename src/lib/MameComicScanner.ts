@@ -1,4 +1,4 @@
-// まめコミポイントスキャナー - React用クラス
+// まめコミポイントスキャナ - React用クラス
 
 export interface CodeRegionInfo {
   x: number
