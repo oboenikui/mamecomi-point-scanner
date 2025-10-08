@@ -6,7 +6,7 @@
     "dev": "vite",
     "dev:https": "vite --host",
     "build": "tsc && vite build",
-    "build:github": "BASE_PATH=/mamecomi-point-scanner/ tsc && vite build",
+    "build:pages": "BASE_PATH=/mamecomi-point-scanner/ tsc && vite build --mode production",
     "preview": "vite preview",
     "preview:https": "vite preview --host",
     "lint": "eslint src/",
