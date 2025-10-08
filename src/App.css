@@ -5,26 +5,33 @@
 header {
   text-align: center;
   margin-bottom: 30px;
-  color: white;
+  color: var(--mamecomi-white);
+  background: var(--mamecomi-light-green);
+  padding: 20px;
+  border-radius: 16px;
+  margin-bottom: 30px;
 }
 
 header h1 {
   font-size: 2.5rem;
   font-weight: 700;
   margin-bottom: 10px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  color: var(--mamecomi-dark-green);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 header p {
   font-size: 1.1rem;
+  color: var(--mamecomi-dark-gray);
   opacity: 0.9;
 }
 
 .scanner-container {
-  background: white;
+  background: var(--mamecomi-white);
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  border: 2px solid var(--mamecomi-light-green);
 }
 
 .camera-section {
@@ -32,6 +39,7 @@ header p {
   margin-bottom: 20px;
   max-width: 100%;
   overflow: hidden;
+  width: 100%;
 }
 
 /* カメラ切り替えボタン */
@@ -43,18 +51,20 @@ header p {
   height: 48px;
   border: none;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
+  background: var(--mamecomi-dark-green);
+  color: var(--mamecomi-white);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background-color 0.3s;
   z-index: 10;
+  box-shadow: 0 4px 12px rgba(51, 168, 82, 0.3);
 }
 
 .camera-switch-btn:hover {
-  background: rgba(0, 0, 0, 0.9);
+  background: #2a8a42;
+  transform: translateY(-2px);
 }
 
 /* モバイルデバイスでのカメラ切り替えボタン */
@@ -86,14 +96,15 @@ header p {
 }
 
 .modal-content {
-  background-color: white;
+  background-color: var(--mamecomi-white);
   margin: 10% auto;
   padding: 0;
   border-radius: 12px;
   width: 90%;
   max-width: 400px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   animation: modalSlideIn 0.3s ease;
+  border: 2px solid var(--mamecomi-light-green);
 }
 
 @keyframes modalSlideIn {
@@ -112,13 +123,16 @@ header p {
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--mamecomi-border-gray);
+  background: var(--mamecomi-light-green);
+  border-radius: 12px 12px 0 0;
 }
 
 .modal-header h3 {
   margin: 0;
-  color: #333;
+  color: var(--mamecomi-dark-green);
   font-size: 1.2rem;
+  font-weight: 600;
 }
 
 .close-btn {
@@ -126,7 +140,7 @@ header p {
   border: none;
   font-size: 24px;
   cursor: pointer;
-  color: #666;
+  color: var(--mamecomi-text-gray);
   padding: 0;
   width: 32px;
   height: 32px;
@@ -138,7 +152,8 @@ header p {
 }
 
 .close-btn:hover {
-  background-color: #f0f0f0;
+  background-color: var(--mamecomi-light-gray);
+  color: var(--mamecomi-dark-green);
 }
 
 .modal-body {
@@ -153,22 +168,22 @@ header p {
 
 .camera-option {
   padding: 16px;
-  border: 2px solid #e0e0e0;
+  border: 2px solid var(--mamecomi-border-gray);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
-  background: white;
+  background: var(--mamecomi-white);
 }
 
 .camera-option:hover {
-  border-color: #667eea;
-  background: #f8f9ff;
+  border-color: var(--mamecomi-dark-green);
+  background: var(--mamecomi-light-green);
 }
 
 .camera-option.selected {
-  border-color: #667eea;
-  background: #667eea;
-  color: white;
+  border-color: var(--mamecomi-dark-green);
+  background: var(--mamecomi-dark-green);
+  color: var(--mamecomi-white);
 }
 
 .camera-option h4 {
@@ -184,24 +199,27 @@ header p {
 
 .camera-section video {
   width: 100%;
-  max-width: 400px;
-  max-height: 400px;
+  max-width: 100%;
+  height: auto;
   aspect-ratio: 1;
   border-radius: 12px;
-  background: #f0f0f0;
+  background: var(--mamecomi-light-gray);
   margin: 0 auto;
   display: block;
+  border: 2px solid var(--mamecomi-light-green);
+  object-fit: cover;
 }
 
 .camera-section canvas {
   width: 100%;
-  max-width: 400px;
-  max-height: 400px;
+  max-width: 100%;
+  height: auto;
   aspect-ratio: 1;
   border-radius: 12px;
-  background: #f0f0f0;
+  background: var(--mamecomi-light-gray);
   margin: 0 auto;
   display: block;
+  border: 2px solid var(--mamecomi-light-green);
 }
 
 .scan-overlay {
@@ -222,9 +240,9 @@ header p {
   height: 27%; /* スキャンフレームの高さを27%に設定 (108/400 = 0.27) */
   max-width: 132px; /* 最大サイズを制限 */
   max-height: 108px; /* 最大サイズを制限 */
-  border: 2px solid #4caf50;
+  border: 2px solid var(--mamecomi-dark-green);
   border-radius: 4px;
-  background: rgba(76, 175, 80, 0.05);
+  background: rgba(51, 168, 82, 0.05);
   animation: pulse 2s infinite;
 }
 
@@ -236,9 +254,9 @@ header p {
   top: 9%;
   bottom: 9%;
   width: 4.5%;
-  border: 2px solid #ff6b35;
+  border: 2px solid var(--mamecomi-pink);
   border-radius: 2px;
-  background: rgba(255, 107, 53, 0.2);
+  background: rgba(255, 107, 157, 0.2);
 }
 
 /* 左括弧 [ */
@@ -273,13 +291,13 @@ header p {
 
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+    box-shadow: 0 0 0 0 rgba(51, 168, 82, 0.7);
   }
   70% {
-    box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+    box-shadow: 0 0 0 10px rgba(51, 168, 82, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+    box-shadow: 0 0 0 0 rgba(51, 168, 82, 0);
   }
 }
 
@@ -303,38 +321,43 @@ header p {
 }
 
 .start-scan {
-  background: #4caf50;
-  color: white;
+  background: var(--mamecomi-dark-green);
+  color: var(--mamecomi-white);
+  box-shadow: 0 4px 12px rgba(51, 168, 82, 0.3);
 }
 
 .start-scan:hover:not(:disabled) {
-  background: #45a049;
+  background: #2a8a42;
   transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(51, 168, 82, 0.4);
 }
 
 .rescan {
-  background: #2196f3;
-  color: white;
+  background: var(--mamecomi-info-blue);
+  color: var(--mamecomi-white);
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
 }
 
 .rescan:hover:not(:disabled) {
-  background: #1976d2;
+  background: #1565c0;
   transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(33, 150, 243, 0.4);
 }
 
 button:disabled {
-  background: #ccc;
+  background: var(--mamecomi-border-gray);
   cursor: not-allowed;
   transform: none;
+  color: var(--mamecomi-text-gray);
 }
 
 .camera-info {
   padding: 12px;
   margin-bottom: 16px;
-  background: #fff3cd;
-  border: 1px solid #ffeaa7;
+  background: var(--mamecomi-light-green);
+  border: 1px solid var(--mamecomi-dark-green);
   border-radius: 8px;
-  color: #856404;
+  color: var(--mamecomi-dark-green);
   font-size: 0.9rem;
   font-weight: 500;
   text-align: center;
@@ -347,34 +370,37 @@ button:disabled {
 .status {
   padding: 16px;
   border-radius: 8px;
-  background: #f5f5f5;
-  color: #666;
+  background: var(--mamecomi-light-gray);
+  color: var(--mamecomi-text-gray);
   font-weight: 500;
+  border: 1px solid var(--mamecomi-border-gray);
 }
 
 .scanned-code {
   padding: 20px;
-  background: #e8f5e8;
+  background: var(--mamecomi-light-green);
   border-radius: 8px;
   margin-top: 16px;
+  border: 2px solid var(--mamecomi-dark-green);
 }
 
 .code-text {
   font-family: 'Monaco', 'Menlo', monospace;
   font-size: 1.2rem;
   font-weight: bold;
-  color: #2e7d32;
+  color: var(--mamecomi-dark-green);
   margin: 12px 0;
   padding: 12px;
-  background: white;
+  background: var(--mamecomi-white);
   border-radius: 6px;
   word-break: break-all;
   white-space: pre-line; /* 改行文字を正しく表示 */
+  border: 1px solid var(--mamecomi-border-gray);
 }
 
 .copy-button {
-  background: #ff9800;
-  color: white;
+  background: var(--mamecomi-pink);
+  color: var(--mamecomi-white);
   margin-top: 12px;
   padding: 12px 20px;
   border: none;
@@ -383,11 +409,13 @@ button:disabled {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255, 107, 157, 0.3);
 }
 
 .copy-button:hover {
-  background: #f57c00;
+  background: #e55a8a;
   transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 107, 157, 0.4);
 }
 
 /* デバッグ表示 */
@@ -412,6 +440,15 @@ button:disabled {
 
   .camera-section {
     margin-bottom: 15px;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .camera-section video,
+  .camera-section canvas {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
   }
 
   .controls {

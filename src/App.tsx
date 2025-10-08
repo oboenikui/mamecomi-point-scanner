@@ -81,7 +81,10 @@ function App() {
     if (scannedCode) {
       try {
         await navigator.clipboard.writeText(scannedCode)
-        setStatus('クリップボードにコピーしました!')
+        setStatus('クリップボードにコピーしました! まめコミサイトに移動します...')
+        
+        // 少し待ってからURLに移動
+        window.open('https://shop.mamecomi.jp/mypage/serialregister/index', '_blank')
       } catch (error) {
         console.error('クリップボードへのコピーエラー:', error)
         setStatus('クリップボードへのコピーに失敗しました')
@@ -242,7 +245,7 @@ function App() {
                 {scannedCode.substring(8)}
               </p>
               <button onClick={handleCopyToClipboard} className="copy-button">
-                クリップボードにコピー
+                コピーしてまめコミサイトへ
               </button>
             </div>
           )}

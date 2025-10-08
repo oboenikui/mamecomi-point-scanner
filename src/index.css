@@ -1,3 +1,18 @@
+/* まめコミカラーパレット */
+:root {
+  --mamecomi-light-green: #D9F0C8;
+  --mamecomi-dark-green: #33A852;
+  --mamecomi-pink: #FF6B9D;
+  --mamecomi-white: #FFFFFF;
+  --mamecomi-dark-gray: #333333;
+  --mamecomi-light-gray: #F5F5F5;
+  --mamecomi-border-gray: #E0E0E0;
+  --mamecomi-text-gray: #666666;
+  --mamecomi-success-green: #4CAF50;
+  --mamecomi-warning-orange: #FF9800;
+  --mamecomi-info-blue: #2196F3;
+}
+
 /* リセット */
 * {
   margin: 0;
@@ -9,8 +24,8 @@ body {
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.6;
-  color: #333;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: var(--mamecomi-dark-gray);
+  background: linear-gradient(135deg, var(--mamecomi-light-green) 0%, var(--mamecomi-dark-green) 100%);
   min-height: 100vh;
 }
 
