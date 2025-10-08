@@ -3,27 +3,34 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "astro dev --host",
-    "build": "astro build",
-    "build:pages": "astro build",
-    "preview": "astro preview --host",
-    "astro": "astro",
+    "dev": "vite",
+    "dev:https": "vite --host",
+    "build": "tsc && vite build",
+    "build:github": "BASE_PATH=/mamecomi-point-scanner/ tsc && vite build",
+    "preview": "vite preview",
+    "preview:https": "vite preview --host",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --write src/"
   },
   "dependencies": {
-    "astro": "^5.12.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "tesseract.js": "^6.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@types/node": "^24.1.0",
-    "@vitejs/plugin-basic-ssl": "^2.1.0",
-    "eslint": "^9.32.0",
-    "eslint-plugin-astro": "^1.3.1",
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "@typescript-eslint/parser": "^8.38.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react": "^7.34.1",
+    "eslint-plugin-react-refresh": "^0.4.6",
     "prettier": "^3.6.2",
-    "typescript-eslint": "^8.38.0",
-    "vite-plugin-mkcert": "^1.17.8"
+    "typescript": "^5.4.2",
+    "vite": "^5.2.8"
   }
 }
