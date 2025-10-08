@@ -386,6 +386,25 @@ export class MameComicScanner {
       // 画像前処理でOCR精度を向上
       const preprocessed = this.preprocessForOCR(scanRegion)
 
+      // デバッグ用に前処理済み画像を通知
+      if (this.onCodeRegionUpdate && guideDetection && 'rect' in guideDetection) {
+        const tempCanvas = document.createElement('canvas')
+        tempCanvas.width = preprocessed.cols
+        tempCanvas.height = preprocessed.rows
+        window.cv.imshow(tempCanvas, preprocessed)
+        const imageDataUrl = tempCanvas.toDataURL('image/png')
+
+        const region: CodeRegionInfo = {
+          x: (guideDetection as any).rect.x,
+          y: (guideDetection as any).rect.y,
+          width: (guideDetection as any).rect.width,
+          height: (guideDetection as any).rect.height,
+          imageDataUrl: imageDataUrl
+        }
+        this.onCodeRegionUpdate(region)
+        console.log('debug image is preprocessed')
+      }
+
       // OCR処理
       const scannedText = await this.performOCR(preprocessed)
 
@@ -433,7 +452,7 @@ export class MameComicScanner {
     // 補正後の画像全体をコード領域として抽出
     // extractCodeRegionFromCorrectedはcorrectedImageをそのまま返すので、
     // ここではdeleteせず、呼び出し元で削除される
-    const codeRegion = this.extractCodeRegionFromCorrected(correctedImage, guideDetection)
+    const codeRegion = this.extractCodeRegionFromCorrected(correctedImage)
 
     return codeRegion
   }
@@ -809,45 +828,33 @@ export class MameComicScanner {
     return corrected
   }
 
-  private extractCodeRegionFromCorrected(correctedImage: any, guideDetection?: any) {
+  private extractCodeRegionFromCorrected(correctedImage: any) {
     // 補正済み画像全体をコード領域として使用
     // correctedImageは既に検出した括弧の線分に囲われた領域全体が透視変換されたもの
-    const totalWidth = correctedImage.cols
-    const totalHeight = correctedImage.rows
-
-    // デバッグ用にコード領域の情報と画像を通知
-    if (this.onCodeRegionUpdate && guideDetection) {
-      // 抽出した領域をcanvasに描画してdata URLを取得
-      const tempCanvas = document.createElement('canvas')
-      tempCanvas.width = totalWidth
-      tempCanvas.height = totalHeight
-      window.cv.imshow(tempCanvas, correctedImage)
-      const imageDataUrl = tempCanvas.toDataURL('image/png')
-
-      const region: CodeRegionInfo = {
-        x: guideDetection.rect.x,
-        y: guideDetection.rect.y,
-        width: guideDetection.rect.width,
-        height: guideDetection.rect.height,
-        imageDataUrl: imageDataUrl
-      }
-      this.onCodeRegionUpdate(region)
-    }
-
+    
     // 補正済み画像全体をそのまま返す（部分的な切り取りはしない）
     return correctedImage
   }
 
   private preprocessForOCR(src: any) {
+    const stretched = new window.cv.Mat()
     const gray = new window.cv.Mat()
     const binary = new window.cv.Mat()
     const processed = new window.cv.Mat()
 
+    // 横方向に伸ばす処理（潰れた文字を補正するため）
+    // 横方向に1.05倍、縦方向はそのまま
+    const stretchScale = 1.05
+    const newWidth = Math.round(src.cols * stretchScale)
+    const newHeight = src.rows
+    const dsize = new window.cv.Size(newWidth, newHeight)
+    window.cv.resize(src, stretched, dsize, 0, 0, window.cv.INTER_CUBIC)
+
     // グレースケールに変換
-    window.cv.cvtColor(src, gray, window.cv.COLOR_RGBA2GRAY)
+    window.cv.cvtColor(stretched, gray, window.cv.COLOR_RGBA2GRAY)
 
     // ガウシアンブラーでノイズ除去（カーネルサイズを5x5に拡大）
-    const kernelSize = new window.cv.Size(5, 5)
+    const kernelSize = new window.cv.Size(3, 3)
     window.cv.GaussianBlur(gray, gray, kernelSize, 0)
 
     // 適応的二値化でコントラストを強調（パラメータを最適化）
@@ -857,8 +864,8 @@ export class MameComicScanner {
       255,
       window.cv.ADAPTIVE_THRESH_GAUSSIAN_C,
       window.cv.THRESH_BINARY,
-      15,  // ブロックサイズを11から15に増加
-      5    // C値を2から5に増加
+      11,
+      5
     )
 
     // モルフォロジー処理で文字を鮮明化（カーネルサイズを拡大）
@@ -866,9 +873,10 @@ export class MameComicScanner {
       window.cv.MORPH_RECT,
       new window.cv.Size(3, 3)  // 2x2から3x3に拡大
     )
-    window.cv.morphologyEx(binary, processed, window.cv.MORPH_CLOSE, kernel)
+    window.cv.morphologyEx(gray, processed, window.cv.MORPH_CLOSE, kernel)
 
     // メモリクリーンアップ
+    stretched.delete()
     gray.delete()
     binary.delete()
     kernel.delete()
@@ -929,13 +937,13 @@ export class MameComicScanner {
   }
 
   private async performMultipleOCR(): Promise<string | null> {
-    const targetSuccessCount = 5
+    const targetSuccessCount = 6
     const scanResults: string[] = []
     let attempts = 0
-    const maxAttempts = 50 // 無限ループを防ぐための上限
+    const maxAttempts = 100 // 無限ループを防ぐための上限
 
     try {
-      // 5回成功するまで繰り返し
+      // targetSuccessCount回成功するまで繰り返し
       while (scanResults.length < targetSuccessCount && attempts < maxAttempts) {
         attempts++
 
@@ -961,7 +969,7 @@ export class MameComicScanner {
 
       console.log(`${targetSuccessCount}回の有効スキャンが完了。結果を統合中...`)
 
-      // 成功した5回の結果から最も信頼性の高いコードを決定
+      // 成功したtargetSuccessCount回の結果から最も信頼性の高いコードを決定
       const finalCode = this.determineMostLikelyCode(scanResults)
       return finalCode
 
@@ -989,6 +997,17 @@ export class MameComicScanner {
       }
     }
 
+    // 誤認識されやすい文字ペアの定義
+    // [正しい文字, 誤認識される文字, 閾値（このペアの合計出現率がこの値以上なら補正適用）]
+    // 閾値は誤認識率に基づいて設定（誤認識率が高いほど閾値を高く設定）
+    const confusionPairs: Array<[string, string, number]> = [
+      ['7', 'T', 0.20],  // 誤認識率50%（2回に1回） → 閾値40%
+      ['M', 'H', 0.20],  // 誤認識率50%（2回に1回） → 閾値40%
+      ['9', 'Y', 0.20],  // 誤認識率33%（3回に1回） → 閾値30%
+      ['P', 'E', 0.25],  // 誤認識率25%（4回に1回） → 閾値25%
+      ['4', 'A', 0.15]   // 誤認識率10%（10回に1回） → 閾値15%
+    ]
+
     // 各位置で最も多く出現した文字を選択し、統計情報も出力
     let finalCode = ''
     for (let i = 0; i < 16; i++) {
@@ -999,17 +1018,42 @@ export class MameComicScanner {
         return null
       }
 
-      // 最も多く出現した文字を取得
-      const mostFrequentChar = Object.keys(counts).reduce((a, b) =>
-        counts[a] > counts[b] ? a : b
-      )
+      let selectedChar = ''
+      
+      // 誤認識パターンのチェック
+      let correctionApplied = false
+      // for (const [correctChar, confusedChar, threshold] of confusionPairs) {
+      //   const correctCount = counts[correctChar] || 0
+      //   const confusedCount = counts[confusedChar] || 0
+      //   const totalPairCount = correctCount + confusedCount
 
-      const maxCount = counts[mostFrequentChar]
-      const confidence = (maxCount / scanResults.length * 100).toFixed(1)
+      //   // この2文字のペアが設定された閾値以上を占める場合
+      //   const pairRatio = totalPairCount / scanResults.length
+      //   if (totalPairCount / scanResults.length >= 0.9 && correctCount / totalPairCount >= threshold) {
+      //     // 正しい方の文字を採用
+      //     selectedChar = correctChar
+      //     correctionApplied = true
+          
+      //     const pairPercentage = (pairRatio * 100).toFixed(1)
+      //     const thresholdPercentage = (threshold * 100).toFixed(0)
+      //     console.log(`位置 ${i}: '${selectedChar}' (誤認識補正: ${correctChar}=${correctCount}回, ${confusedChar}=${confusedCount}回, 合計${pairPercentage}% ≥ 閾値${thresholdPercentage}% → ${correctChar}を採用)`)
+      //     break
+      //   }
+      // }
 
-      console.log(`位置 ${i}: '${mostFrequentChar}' (${maxCount}/${scanResults.length}回, ${confidence}%)`)
+      // 誤認識パターンが適用されなかった場合、最も多く出現した文字を取得
+      if (!correctionApplied) {
+        selectedChar = Object.keys(counts).reduce((a, b) =>
+          counts[a] > counts[b] ? a : b
+        )
 
-      finalCode += mostFrequentChar
+        const maxCount = counts[selectedChar]
+        const confidence = (maxCount / scanResults.length * 100).toFixed(1)
+
+        console.log(`位置 ${i}: '${selectedChar}' (${maxCount}/${scanResults.length}回, ${confidence}%)`)
+      }
+
+      finalCode += selectedChar
     }
 
     console.log(`最終統合結果: ${finalCode}`)
