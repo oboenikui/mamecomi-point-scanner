@@ -116,6 +116,9 @@ export class MameComicScanner {
 
   async startScanning() {
     try {
+      // 既存のスキャンを停止（再スキャン時のクリーンアップ）
+      this.stopScanning()
+      
       this.updateStatus('カメラにアクセス中...')
       this.setState('scanning')
 
@@ -354,7 +357,11 @@ export class MameComicScanner {
             this.setState('completed')
             this.updateStatus('スキャン完了!')
           }
+        } else {
+          this.updateStatus('文字の認識中... そのまま動かさないでください。')
         }
+      } else {
+        this.updateStatus('スキャン中... マーカーを枠内に合わせてください')
       }
 
     } catch (error) {
@@ -372,7 +379,6 @@ export class MameComicScanner {
 
       if (!guideDetection.found) {
         // ガイドが検出できない場合
-        this.updateStatus('スキャン中... マーカーを枠内に合わせてください')
         src.delete()
         return {
           guideDetected: false,
@@ -402,7 +408,6 @@ export class MameComicScanner {
           imageDataUrl: imageDataUrl
         }
         this.onCodeRegionUpdate(region)
-        console.log('debug image is preprocessed')
       }
 
       // OCR処理
@@ -444,7 +449,6 @@ export class MameComicScanner {
     }
 
     console.log('ガイドマーカーを検出しました。角度補正を実行します。')
-    this.updateStatus('文字の認識中... そのまま動かさないでください。')
 
     // 角度補正を実行
     const correctedImage = this.correctAngle(src, guideDetection)
@@ -468,8 +472,8 @@ export class MameComicScanner {
     const frameHeight = 108
 
     // 画像サイズに対する割合を計算
-    const widthRatio = frameWidth / baseSize
-    const heightRatio = frameHeight / baseSize
+    const widthRatio = frameWidth / baseSize * 1.2
+    const heightRatio = frameHeight / baseSize * 1.2
 
     // 実際の切り取りサイズを計算
     const width = Math.floor(src.cols * widthRatio)
@@ -660,25 +664,26 @@ export class MameComicScanner {
       stats.bracketPairs = bracketPairs.length
       stats.bracketCandidates = bracketPairs
 
-      // 最適な括弧ペアを選択
+      // 最適な括弧ペアを選択（画像中央に最も近い左右のペア）
       if (bracketPairs.length > 0) {
-        const centerX = src.cols / 2
-        const centerY = src.rows / 2
+        const scanCenterX = scanRegion.x + scanRegion.width / 2
 
         let bestBracket = bracketPairs[0]
-        let minDistance = Number.MAX_VALUE
+        let minCombinedDistance = Number.MAX_VALUE
         let bestIndex = 0
 
         for (let i = 0; i < bracketPairs.length; i++) {
           const bracket = bracketPairs[i]
-          const distance = Math.sqrt(
-            Math.pow(bracket.center.x - centerX, 2) + Math.pow(bracket.center.y - centerY, 2)
-          )
+          
+          // 左線の中央からの距離と右線の中央からの距離を合計
+          const leftDistance = Math.abs(bracket.leftLine.globalCenterX - scanCenterX)
+          const rightDistance = Math.abs(bracket.rightLine.globalCenterX - scanCenterX)
+          const combinedDistance = leftDistance + rightDistance
 
-          console.log(`  括弧ペア ${i}: 中央からの距離=${distance.toFixed(1)}`)
+          console.log(`  括弧ペア ${i}: 左線距離=${leftDistance.toFixed(1)}, 右線距離=${rightDistance.toFixed(1)}, 合計=${combinedDistance.toFixed(1)}`)
 
-          if (distance < minDistance) {
-            minDistance = distance
+          if (combinedDistance < minCombinedDistance) {
+            minCombinedDistance = combinedDistance
             bestBracket = bracket
             bestIndex = i
           }
@@ -688,7 +693,7 @@ export class MameComicScanner {
         stats.selectedBracket = true
         stats.guideDetected = true
 
-        console.log(`最適な括弧ペアを選択: インデックス ${bestIndex}, 距離=${minDistance.toFixed(1)}`)
+        console.log(`最適な括弧ペアを選択: インデックス ${bestIndex}, 中央からの合計距離=${minCombinedDistance.toFixed(1)}`)
 
         // 括弧ペアから仮想的な矩形を構築（グローバル座標で）
         const virtualRect = {
@@ -1001,11 +1006,11 @@ export class MameComicScanner {
     // [正しい文字, 誤認識される文字, 閾値（このペアの合計出現率がこの値以上なら補正適用）]
     // 閾値は誤認識率に基づいて設定（誤認識率が高いほど閾値を高く設定）
     const confusionPairs: Array<[string, string, number]> = [
-      ['7', 'T', 0.20],  // 誤認識率50%（2回に1回） → 閾値40%
-      ['M', 'H', 0.20],  // 誤認識率50%（2回に1回） → 閾値40%
-      ['9', 'Y', 0.20],  // 誤認識率33%（3回に1回） → 閾値30%
-      ['P', 'E', 0.25],  // 誤認識率25%（4回に1回） → 閾値25%
-      ['4', 'A', 0.15]   // 誤認識率10%（10回に1回） → 閾値15%
+      ['7', 'T', 0.25],
+      ['M', 'H', 0.25],
+      ['9', 'Y', 0.25],
+      ['P', 'E', 0.25],
+      ['4', 'A', 0.15]
     ]
 
     // 各位置で最も多く出現した文字を選択し、統計情報も出力
@@ -1022,24 +1027,24 @@ export class MameComicScanner {
       
       // 誤認識パターンのチェック
       let correctionApplied = false
-      // for (const [correctChar, confusedChar, threshold] of confusionPairs) {
-      //   const correctCount = counts[correctChar] || 0
-      //   const confusedCount = counts[confusedChar] || 0
-      //   const totalPairCount = correctCount + confusedCount
+      for (const [correctChar, confusedChar, threshold] of confusionPairs) {
+        const correctCount = counts[correctChar] || 0
+        const confusedCount = counts[confusedChar] || 0
+        const totalPairCount = correctCount + confusedCount
 
-      //   // この2文字のペアが設定された閾値以上を占める場合
-      //   const pairRatio = totalPairCount / scanResults.length
-      //   if (totalPairCount / scanResults.length >= 0.9 && correctCount / totalPairCount >= threshold) {
-      //     // 正しい方の文字を採用
-      //     selectedChar = correctChar
-      //     correctionApplied = true
+        // この2文字のペアが設定された閾値以上を占める場合
+        const pairRatio = totalPairCount / scanResults.length
+        if (totalPairCount / scanResults.length >= 0.9 && correctCount / totalPairCount >= threshold) {
+          // 正しい方の文字を採用
+          selectedChar = correctChar
+          correctionApplied = true
           
-      //     const pairPercentage = (pairRatio * 100).toFixed(1)
-      //     const thresholdPercentage = (threshold * 100).toFixed(0)
-      //     console.log(`位置 ${i}: '${selectedChar}' (誤認識補正: ${correctChar}=${correctCount}回, ${confusedChar}=${confusedCount}回, 合計${pairPercentage}% ≥ 閾値${thresholdPercentage}% → ${correctChar}を採用)`)
-      //     break
-      //   }
-      // }
+          const pairPercentage = (pairRatio * 100).toFixed(1)
+          const thresholdPercentage = (threshold * 100).toFixed(0)
+          console.log(`位置 ${i}: '${selectedChar}' (誤認識補正: ${correctChar}=${correctCount}回, ${confusedChar}=${confusedCount}回, 合計${pairPercentage}% ≥ 閾値${thresholdPercentage}% → ${correctChar}を採用)`)
+          break
+        }
+      }
 
       // 誤認識パターンが適用されなかった場合、最も多く出現した文字を取得
       if (!correctionApplied) {
