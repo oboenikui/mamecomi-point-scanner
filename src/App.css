@@ -135,6 +135,40 @@
   color: var(--mamecomi-dark-green);
 }
 
+.safety-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.safety-item {
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--mamecomi-light-gray);
+  border: 1px solid var(--mamecomi-border-gray);
+  text-align: left;
+}
+
+.safety-item h3 {
+  margin-bottom: 8px;
+  color: var(--mamecomi-dark-green);
+  font-size: 1.05rem;
+}
+
+.safety-item p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.safety-note {
+  margin-top: 16px;
+  font-size: 0.95rem;
+  color: var(--mamecomi-text-gray);
+}
+
 .about-list {
   margin-top: 16px;
   padding-left: 20px;
