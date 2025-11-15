@@ -35,7 +35,7 @@ const highlightFeatures = [
   {
     title: '揺れる子育てシーンでも安定',
     description:
-      'フレーム毎のノイズリダクションと括弧ガイドで、片手抱っこや寝かしつけ中の暗所でも読み取り誤差を最小化。撮り直し回数を平均40%削減（自社検証値）。',
+      'フレーム毎のノイズリダクションと括弧ガイドで、片手抱っこや寝かしつけ中の手ブレにも粘り強く対応。暗所では端末のライトや室内照明の併用を推奨します。',
     badge: 'Stability',
   },
   {
@@ -72,7 +72,7 @@ const faqItems = [
   {
     question: 'まめコミってなに？',
     answer:
-      '雪印ビーンスタークが運営する妊娠・出産・育児の会員制サポートサイトです。子育て記事やポイントキャンペーンが揃い、シリアル登録で豪華カタログギフトに応募できます。詳細: https://www.mamecomi.jp/point_announce',
+      '妊娠・出産・育児の会員制サポートサイトで、子育て記事やポイントキャンペーンが充実しています。本スキャナはoboenikuiが個人で開発した非公式ツールですが、登録作業の時短に役立てます。詳細: https://www.mamecomi.jp/point_announce',
   },
   {
     question: 'なぜ公式アプリより正確なの？',
@@ -90,12 +90,12 @@ const LandingPage: React.FC<LandingPageProps> = ({
   return (
     <>
       <div className="landing">
-        <section className="landing-hero">
-          <p className="hero-eyebrow">雪印ビーンスターク まめコミポイント専用スキャナ</p>
+          <section className="landing-hero">
+            <p className="hero-eyebrow">まめコミポイント向け非公式スキャナ</p>
           <h1>公式アプリより正確に、シリアル登録を一発完了。</h1>
           <p className="hero-lead">
-            まめコミポイントキャンペーン（https://www.mamecomi.jp/point_announce）で必要なシリアル読み取りをOpenCVで自動化。
-            暗所・反射・微ブレにも強く、撮り直しのストレスをなくします。
+              まめコミポイントキャンペーン（https://www.mamecomi.jp/point_announce）で必要なシリアル読み取りをOpenCVで自動化。
+              反射や微ブレに強く、暗所では端末ライトを併用しながら撮り直しのストレスを減らします。
           </p>
           <div className="hero-metrics">
             {heroMetrics.map((metric) => (
@@ -131,12 +131,12 @@ const LandingPage: React.FC<LandingPageProps> = ({
           <p className="safety-note">スキャンは完全にブラウザ上で処理され、サーバーへ画像やテキストが送られることはありません。</p>
         </section>
 
-        <section className="section-card">
-          <h2>まめコミポイントの魅力</h2>
-          <p>
-            まめコミは、妊娠・出産・育児を支える雪印ビーンスタークの会員コミュニティ。シリアル登録で貯まるポイントは、2,000点以上のHAGコースや1,200点以上のHAKコースなど
-            多彩なカタログギフトと交換できます。ポイントの有効期限は最終シリアル登録から1年間です。
-          </p>
+          <section className="section-card">
+            <h2>まめコミポイントの魅力</h2>
+            <p>
+              まめコミは、妊娠・出産・育児をサポートする会員コミュニティで、シリアル登録で貯まるポイントは2,000点以上のHAGコースや1,200点以上のHAKコースなど
+              多彩なカタログギフトと交換できます。本スキャナはoboenikuiが提供する非公式ツールですが、ポイントの有効期限（最終シリアル登録から1年間）を逃さず管理する手助けになります。
+            </p>
           <ul className="about-list">
             <li>専門家監修のコンテンツと連動した安心設計。</li>
             <li>国内外ブランド・知育玩具・ベビーケア用品まで幅広く掲載。</li>
