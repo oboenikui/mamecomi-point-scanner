@@ -50,37 +50,15 @@
   line-height: 1.7;
 }
 
-.hero-metrics {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-}
-
-.metric-card {
-  border-radius: 18px;
-  padding: 16px;
-  background: var(--mamecomi-light-green);
-  border: 1px solid rgba(51, 168, 82, 0.35);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.metric-label {
-  font-size: 0.9rem;
+.hero-placeholder {
+  margin-top: 16px;
+  border-radius: 20px;
+  border: 2px dashed rgba(51, 168, 82, 0.4);
+  padding: 32px;
+  text-align: center;
   font-weight: 600;
-  color: var(--mamecomi-dark-green);
-  text-transform: uppercase;
-}
-
-.metric-value {
-  font-size: 1.6rem;
-  color: var(--mamecomi-dark-green);
-}
-
-.metric-description {
-  font-size: 0.85rem;
   color: var(--mamecomi-text-gray);
+  background: rgba(255, 255, 255, 0.7);
 }
 
 .feature-grid {

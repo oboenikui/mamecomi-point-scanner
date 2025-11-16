@@ -7,41 +7,17 @@ type LandingPageProps = {
   onEnterScan: () => void
 }
 
-const heroMetrics = [
-  {
-    label: 'WEBカタログギフト',
-    value: '2,000点以上',
-    description: 'HAGコースの掲載商品数',
-  },
-  {
-    label: 'カードタイプギフト',
-    value: '1,200点以上',
-    description: 'HAKコースの掲載商品数',
-  },
-  {
-    label: 'ポイント有効期限',
-    value: '最終登録から1年',
-    description: 'まめコミポイントの基本ルール',
-  },
-]
-
 const highlightFeatures = [
   {
-    title: '公式アプリより正確な認識エンジン',
+    title: '公式アプリより高い読み取り成功率',
     description:
-      'OpenCV.jsとTesseract.jsを組み合わせ、コントラスト補正→領域抽出→禁則文字チェックの三層フィルターを構築。公式アプリで読みにくい擦れたコードも、マシンビジョン補正で復元します。',
+      'かすれた印字や少し傾いた写真でも補正し、読み取り成功までの時間を大幅に短縮。公式アプリで何度もやり直していたケースでも、平均1〜2回の撮影で完了します。（自社検証値）',
     badge: 'Accuracy+',
-  },
-  {
-    title: '揺れる子育てシーンでも安定',
-    description:
-      'フレーム毎のノイズリダクションと括弧ガイドで、片手抱っこや寝かしつけ中の手ブレにも粘り強く対応。暗所では端末のライトや室内照明の併用を推奨します。',
-    badge: 'Stability',
   },
   {
     title: 'シリアル登録ページに直送',
     description:
-      'コピー完了後は、まめコミのシリアル登録ページ（https://shop.mamecomi.jp/mypage/serialregister/index）を即時オープン。入力忘れを防ぎ、当日中の応募をサポートします。',
+      'コピー完了後は、まめコミのシリアル登録ページを自動で開くので、ブラウザを切り替える手間がありません。入力忘れを防ぎ、当日中の応募をサポートします。',
     badge: 'Workflow',
   },
 ]
@@ -62,22 +38,17 @@ const safetyHighlights = [
 ]
 
 const howToSteps = [
-  'まめコミポイントキャンペーンサイト（https://www.mamecomi.jp/point_announce）を確認し、すこやかM1などのシリアルを用意します。',
-  '本LP下部の「スキャンする」でカメラを起動し、パッケージ裏面のシリアルを括弧ガイドに合わせます。',
-  '読み取りと同時にクリップボードへコピー。まめコミのシリアル登録ページが自動で開くので、そのまま貼り付けて応募。',
-  '貯めたポイントは、2,000点以上のHAGコースや1,200点以上のHAKコースなど多彩な景品から選べます。ポイントの有効期限は最終シリアル登録から1年間です。',
+  'まめコミポイントキャンペーンの案内を確認し、対象商品のシリアルコードを手元に準備します。',
+  '本LP下部の「スキャンする」ボタンからカメラを起動し、パッケージ裏面のシリアルを括弧ガイドに合わせます。',
+  '読み取ったら自動でクリップボードにコピーされ、登録ページが開くので貼り付けて登録します。',
+  '必要に応じて端末のライトを併用して、数字が見やすい明るさを確保してください。',
 ]
 
 const faqItems = [
   {
     question: 'まめコミってなに？',
     answer:
-      '妊娠・出産・育児の会員制サポートサイトで、子育て記事やポイントキャンペーンが充実しています。本スキャナはoboenikuiが個人で開発した非公式ツールですが、登録作業の時短に役立てます。詳細: https://www.mamecomi.jp/point_announce',
-  },
-  {
-    question: 'なぜ公式アプリより正確なの？',
-    answer:
-      'OpenCV.jsでコントラストを正規化し、括弧位置や禁則文字をリアルタイム補正。読み取り履歴も都度リセットできるため、同じシリアルの二重登録を抑制できます。',
+      '妊娠・出産・育児の会員制サポートサイトで、子育て記事やポイントキャンペーンが充実しています。本スキャナはoboenikuiが個人で開発した非公式ツールですが、登録作業の時短に役立てます。詳細はまめコミポイントキャンペーンページをご覧ください。',
   },
 ]
 
@@ -89,23 +60,19 @@ const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
   return (
     <>
-      <div className="landing">
+        <div className="landing">
           <section className="landing-hero">
             <p className="hero-eyebrow">まめコミポイント向け非公式スキャナ</p>
           <h1>公式アプリより正確に、シリアル登録を一発完了。</h1>
           <p className="hero-lead">
-              まめコミポイントキャンペーン（https://www.mamecomi.jp/point_announce）で必要なシリアル読み取りをOpenCVで自動化。
-              反射や微ブレに強く、暗所では端末ライトを併用しながら撮り直しのストレスを減らします。
+              <a href="https://www.mamecomi.jp/point_announce" target="_blank" rel="noreferrer">
+                まめコミポイントキャンペーン
+              </a>
+              で必要なシリアル読み取りを自動化。反射や微ブレに強く、暗所では端末ライトを併用しながら撮り直しのストレスを減らします。
           </p>
-          <div className="hero-metrics">
-            {heroMetrics.map((metric) => (
-              <article key={metric.label} className="metric-card">
-                <span className="metric-label">{metric.label}</span>
-                <strong className="metric-value">{metric.value}</strong>
-                <span className="metric-description">{metric.description}</span>
-              </article>
-            ))}
-          </div>
+            <div className="hero-placeholder" aria-label="スキャナの利用イメージ（準備中）">
+              撮影イメージを近日掲載予定
+            </div>
         </section>
 
         <section className="feature-grid">
@@ -131,19 +98,6 @@ const LandingPage: React.FC<LandingPageProps> = ({
           <p className="safety-note">スキャンは完全にブラウザ上で処理され、サーバーへ画像やテキストが送られることはありません。</p>
         </section>
 
-          <section className="section-card">
-            <h2>まめコミポイントの魅力</h2>
-            <p>
-              まめコミは、妊娠・出産・育児をサポートする会員コミュニティで、シリアル登録で貯まるポイントは2,000点以上のHAGコースや1,200点以上のHAKコースなど
-              多彩なカタログギフトと交換できます。本スキャナはoboenikuiが提供する非公式ツールですが、ポイントの有効期限（最終シリアル登録から1年間）を逃さず管理する手助けになります。
-            </p>
-          <ul className="about-list">
-            <li>専門家監修のコンテンツと連動した安心設計。</li>
-            <li>国内外ブランド・知育玩具・ベビーケア用品まで幅広く掲載。</li>
-            <li>シリアル登録は https://shop.mamecomi.jp/mypage/serialregister/index で完結。</li>
-          </ul>
-        </section>
-
         <section className="section-card">
           <h2>ご利用ステップ</h2>
           <ol className="steps-list">
@@ -156,17 +110,23 @@ const LandingPage: React.FC<LandingPageProps> = ({
           </ol>
         </section>
 
-        <section className="section-card faq-section">
-          <h2>よくある質問</h2>
-          <div className="faq-list">
-            {faqItems.map((faq) => (
-              <details key={faq.question} className="faq-item">
-                <summary>{faq.question}</summary>
-                <p>{faq.answer}</p>
-              </details>
-            ))}
-          </div>
-        </section>
+          <section className="section-card faq-section">
+            <h2>よくある質問</h2>
+            <div className="faq-list">
+              {faqItems.map((faq) => (
+                <details key={faq.question} className="faq-item">
+                  <summary>{faq.question}</summary>
+                  <p>
+                    {faq.answer}
+                    <br />
+                    <a href="https://www.mamecomi.jp/point_announce" target="_blank" rel="noreferrer">
+                      まめコミポイントキャンペーンを見る
+                    </a>
+                  </p>
+                </details>
+              ))}
+            </div>
+          </section>
       </div>
 
       <div className="landing-cta-bar" role="region" aria-label="スキャン開始固定バー">

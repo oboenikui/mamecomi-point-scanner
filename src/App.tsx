@@ -244,8 +244,8 @@ function App() {
   const libraryStatusMessage = libraryError
     ? libraryError
     : isLoadingLibraries
-      ? 'OpenCV.js / Tesseract.js をバックグラウンドで先読み中...'
-      : 'OpenCV.js / Tesseract.js のプリロードが完了しました。'
+      ? 'スキャンの準備をしています…'
+      : '準備が整いました。いつでもスキャンできます。'
 
   return (
     <div className={`app ${isLandingVisible ? 'app-landing' : 'app-scanning'}`}>
