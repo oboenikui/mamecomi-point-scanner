@@ -40,8 +40,8 @@ const safetyHighlights = [
 const howToSteps = [
   'まめコミポイントキャンペーンの案内を確認し、対象商品のシリアルコードを手元に準備します。',
   '本LP下部の「スキャンする」ボタンからカメラを起動し、パッケージ裏面のシリアルを括弧ガイドに合わせます。',
-  '読み取ったら自動でクリップボードにコピーされ、登録ページが開くので貼り付けて登録します。',
-  '必要に応じて端末のライトを併用して、数字が見やすい明るさを確保してください。',
+  '読み取ったら自動でクリップボードにコピーされるので、登録ページでログインしたあとに貼り付けて登録します。',
+  '数字が読み取りやすいよう十分な明るさを確保して撮影してください。',
 ]
 
 const faqItems = [
@@ -64,12 +64,12 @@ const LandingPage: React.FC<LandingPageProps> = ({
           <section className="landing-hero">
             <p className="hero-eyebrow">まめコミポイント向け非公式スキャナ</p>
           <h1>公式アプリより正確に、シリアル登録を一発完了。</h1>
-          <p className="hero-lead">
+            <p className="hero-lead">
               <a href="https://www.mamecomi.jp/point_announce" target="_blank" rel="noreferrer">
                 まめコミポイントキャンペーン
               </a>
-              で必要なシリアル読み取りを自動化。反射や微ブレに強く、暗所では端末ライトを併用しながら撮り直しのストレスを減らします。
-          </p>
+              で必要なシリアル読み取りを自動化。公式アプリより高い認識率で、入力のストレスを減らします。
+            </p>
             <div className="hero-placeholder" aria-label="スキャナの利用イメージ（準備中）">
               撮影イメージを近日掲載予定
             </div>
