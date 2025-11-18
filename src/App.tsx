@@ -25,6 +25,7 @@ function App() {
   const [librariesReady, setLibrariesReady] = useState(false)
   const [libraryError, setLibraryError] = useState<string | null>(null)
   const [isLoadingLibraries, setIsLoadingLibraries] = useState(true)
+  const [shouldAutoStart, setShouldAutoStart] = useState(false)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -48,6 +49,7 @@ function App() {
     const skipPref = typeof window !== 'undefined' && localStorage.getItem('mamecomiSkipLanding') === 'true'
     if (skipPref) {
       setIsLandingVisible(false)
+      setShouldAutoStart(true)
     }
     setSkipLandingNextTime(skipPref)
   }, [])
@@ -188,8 +190,16 @@ function App() {
       setAvailableCameras([])
       setCurrentCameraId(null)
       setCameraInfo(null)
+      setShouldAutoStart(false)
     }
   }, [isLandingVisible])
+
+  useEffect(() => {
+    if (shouldAutoStart && isScannerReady) {
+      scannerRef.current?.startScanning()
+      setShouldAutoStart(false)
+    }
+  }, [shouldAutoStart, isScannerReady])
 
   const handleStartScan = () => {
     scannerRef.current?.startScanning()
@@ -209,11 +219,11 @@ function App() {
 
     try {
       await navigator.clipboard.writeText(scannedCode)
-      setStatus('コードを貼り付け用に保存しました。登録ページに移動します。')
+      setStatus('コードをコピーしました。登録ページを開きます。')
       window.open('https://shop.mamecomi.jp/mypage/serialregister/index', '_blank')
     } catch (error) {
       console.error('クリップボードへのコピーエラー:', error)
-      setStatus('コードの保存に失敗しました')
+      setStatus('コードのコピーに失敗しました')
     }
   }
 
@@ -232,6 +242,7 @@ function App() {
 
   const handleEnterScanMode = () => {
     setIsLandingVisible(false)
+    setShouldAutoStart(true)
   }
 
   const handleSkipLandingPreference = (isSkipped: boolean) => {
