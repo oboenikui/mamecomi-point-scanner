@@ -4,9 +4,39 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="すこやかミルクのシリアルコードをスキャンしてクリップボードにコピーします" />
-    <title>まめコミポイントスキャナ</title>
-    
+    <title>まめコミポイントスキャナ | 公式アプリより正確なシリアル読取</title>
+    <link rel="canonical" href="https://oboenikui.com/mamecomi-point-scanner/" />
+    <meta
+      name="description"
+      content="oboenikuiが個人開発したまめコミポイント向け非公式Webスキャナ。OpenCV.jsとTesseract.jsでシリアルコードを解析し、コピー＆ペーストで登録ページへスムーズに貼り付けられます。"
+    />
+    <meta name="keywords" content="まめコミポイント, すこやかM1, シリアルコード, OpenCV.js, スキャナー, oboenikui" />
+    <meta name="author" content="oboenikui" />
+    <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1" />
+    <meta name="application-name" content="まめコミポイントスキャナ" />
+    <meta name="format-detection" content="telephone=no,email=no,address=no" />
+
+    <!-- Open Graph / Twitter -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:url" content="https://oboenikui.com/mamecomi-point-scanner/" />
+    <meta property="og:title" content="まめコミポイントスキャナ | 公式アプリより正確なシリアル読取" />
+    <meta
+      property="og:description"
+      content="まめコミポイントキャンペーン向けに最適化されたOpenCV.js搭載スキャナ。読み取ったコードをコピーして、登録ページにそのまま貼り付けられます。"
+    />
+    <meta property="og:site_name" content="まめコミポイントスキャナ" />
+    <meta property="og:image" content="https://oboenikui.com/mamecomi-point-scanner/pwa-512x512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="まめコミポイントスキャナ | 公式アプリより正確なシリアル読取" />
+    <meta
+      name="twitter:description"
+      content="OpenCV.jsとTesseract.jsでシリアルコードを解析し、コピー＆ペーストで登録ページへ即誘導。LPスキップやPWA対応で時短運用を実現します。"
+    />
+    <meta name="twitter:image" content="https://oboenikui.com/mamecomi-point-scanner/pwa-512x512.png" />
+
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#33A852" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -14,20 +44,48 @@
     <meta name="apple-mobile-web-app-title" content="まめコミスキャナー" />
     <meta name="msapplication-TileColor" content="#33A852" />
     <meta name="msapplication-config" content="/browserconfig.xml" />
-    
+    <link rel="manifest" href="/manifest.webmanifest" />
+
     <!-- Apple Touch Icons -->
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5" />
-    
-    <!-- OpenCV.js -->
-    <script async src="/opencv.js"></script>
-    <!-- Tesseract.js -->
-    <script async src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "まめコミポイントスキャナ",
+        "url": "https://oboenikui.com/mamecomi-point-scanner/",
+        "applicationCategory": "UtilityApplication",
+        "operatingSystem": "Android, iOS, Web",
+        "description": "OpenCV.jsとTesseract.jsを活用し、まめコミポイントキャンペーン用シリアルコードを高精度に読み取る非公式の無料Webアプリです。",
+        "publisher": {
+          "@type": "Person",
+          "name": "oboenikui",
+          "url": "https://bsky.app/profile/oboenikui.com"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "JPY"
+        },
+        "featureList": [
+          "OpenCV.jsとTesseract.jsによる高度なシリアル認識",
+          "シリアル登録ページへの自動リダイレクト",
+          "LPの常時表示/スキップ制御とPWA対応"
+        ],
+        "potentialAction": {
+          "@type": "UseAction",
+          "target": "https://oboenikui.com/mamecomi-point-scanner/",
+          "name": "まめコミポイントのシリアルをスキャン"
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
-</html> 
+</html>

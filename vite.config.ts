@@ -29,7 +29,7 @@ export default defineConfig({
       manifest: {
         name: 'まめコミポイントスキャナ',
         short_name: 'まめコミスキャナ',
-        description: 'すこやかミルクのシリアルコードをスキャンしてクリップボードにコピーします',
+          description: 'すこやかミルクのシリアルコードをスキャンしてコピーし、登録画面で貼り付けられるようにします',
         theme_color: '#33A852',
         background_color: '#D9F0C8',
         display: 'standalone',
