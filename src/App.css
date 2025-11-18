@@ -172,7 +172,7 @@
 .steps-list li {
   display: flex;
   gap: 16px;
-  align-items: flex-start;
+  align-items: center;
   background: var(--mamecomi-light-gray);
   border-radius: 16px;
   padding: 16px;
@@ -316,10 +316,10 @@
 
 .camera-section {
   position: relative;
-  margin-bottom: 20px;
-  max-width: 100%;
-  overflow: hidden;
+  margin: 0 auto 20px;
+  max-width: 400px;
   width: 100%;
+  overflow: hidden;
 }
 
 /* カメラ切り替えボタン */
@@ -477,29 +477,17 @@
   opacity: 0.7;
 }
 
-.camera-section video {
+.camera-section video,
+.camera-section canvas {
   width: 100%;
-  max-width: 100%;
-  height: auto;
-  aspect-ratio: 1;
+  max-width: 400px;
+  height: 400px;
   border-radius: 12px;
   background: var(--mamecomi-light-gray);
   margin: 0 auto;
   display: block;
   border: 2px solid var(--mamecomi-light-green);
   object-fit: cover;
-}
-
-.camera-section canvas {
-  width: 100%;
-  max-width: 100%;
-  height: auto;
-  aspect-ratio: 1;
-  border-radius: 12px;
-  background: var(--mamecomi-light-gray);
-  margin: 0 auto;
-  display: block;
-  border: 2px solid var(--mamecomi-light-green);
 }
 
 .scan-overlay {

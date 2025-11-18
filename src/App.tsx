@@ -209,11 +209,11 @@ function App() {
 
     try {
       await navigator.clipboard.writeText(scannedCode)
-      setStatus('クリップボードにコピーしました! まめコミサイトに移動します...')
+      setStatus('コードを貼り付け用に保存しました。登録ページに移動します。')
       window.open('https://shop.mamecomi.jp/mypage/serialregister/index', '_blank')
     } catch (error) {
       console.error('クリップボードへのコピーエラー:', error)
-      setStatus('クリップボードへのコピーに失敗しました')
+      setStatus('コードの保存に失敗しました')
     }
   }
 

@@ -165,7 +165,7 @@ const ScannerView: React.FC<ScannerViewProps> = ({
                 {scannedCode.substring(8)}
               </p>
               <button onClick={onCopyToClipboard} className="copy-button">
-                コピーしてまめコミサイトへ
+                登録ページを開く
               </button>
             </div>
           )}
