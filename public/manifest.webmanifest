@@ -1,0 +1,30 @@
+{
+  "name": "まめコミポイントスキャナ",
+  "short_name": "まめコミスキャナ",
+  "description": "すこやかミルクのシリアルコードをスキャンしてコピーし、登録画面で貼り付けられるようにします",
+  "start_url": "/mamecomi-point-scanner/",
+  "display": "standalone",
+  "background_color": "#D9F0C8",
+  "theme_color": "#33A852",
+  "lang": "ja",
+  "scope": "/mamecomi-point-scanner/",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
